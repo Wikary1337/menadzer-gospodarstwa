@@ -415,6 +415,9 @@ button.primary:hover{background:#1d4ed8}
           <label>Data serwisu<br>
             <input id="serviceDate" type="date">
           </label>
+          <label>Przebieg przy serwisie (mth / km)<br>
+            <input id="serviceOdo" type="number" step="0.1">
+          </label>
         </div>
 
         <div class="form-row">
@@ -1233,7 +1236,6 @@ async function editTreatment(id){
   if(!itErr && items && items.length){
     items.forEach(it=>{
       if(it.extra_name){
-        // to jest środek jednorazowy
         if(!extraHandled){
           extraHandled = true;
           document.getElementById('extraName').value = it.extra_name;
@@ -1630,6 +1632,7 @@ async function saveService(){
   const machineId = machineSelect.value;
   const machineType = machineSelect.options[machineSelect.selectedIndex]?.dataset.type || 'maszyna';
   const date = document.getElementById('serviceDate').value;
+  const serviceOdo = parseFloat(document.getElementById('serviceOdo').value || '0');
   const noteBase = document.getElementById('serviceNote').value.trim();
 
   if(!machineId){alert('Wybierz maszynę');return;}
@@ -1670,7 +1673,7 @@ async function saveService(){
     tasksSummary = 'Maszyna – szczegóły w opisie czynności.';
   }
 
-  const fullNote = `Typ: ${machineType}; ${tasksSummary}; Opis: ${noteBase}`;
+  const fullNote = `Typ: ${machineType}; przebieg: ${isNaN(serviceOdo)?'brak':serviceOdo}; ${tasksSummary}; Opis: ${noteBase}`;
 
   const { error } = await supabaseClient
     .from('machine_services')
@@ -1682,8 +1685,21 @@ async function saveService(){
     return;
   }
 
+  if(!isNaN(serviceOdo) && serviceOdo > 0){
+    const { error: updErr } = await supabaseClient
+      .from('machines')
+      .update({ odometer: serviceOdo })
+      .eq('id', Number(machineId));
+    if(updErr){
+      console.log('Update machine odometer error', updErr);
+    }else{
+      await loadMachines();
+    }
+  }
+
   alert('Serwis zapisany');
   document.getElementById('serviceDate').value='';
+  document.getElementById('serviceOdo').value='';
   document.getElementById('serviceNote').value='';
   document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
   await loadServicesForMachine(Number(machineId));
