@@ -515,15 +515,17 @@ const CROP_COLORS = {
   'Groch': '#22c1c3',
   'Burak cukrowy': '#ef4444',
   'Ziemniaki': '#a855f7',
+  'Łąka': '#16a34a',
   'Łąka trwała': '#16a34a',
+  'Lucerna': '#15803d',
   'Lucerna wieloletnia': '#15803d'
 };
 function getCropColor(name){
-  // spróbuj najpierw pełnej nazwy, potem pierwszego słowa
-  if (CROP_COLORS[name]) return CROP_COLORS[name];
-  const firstWord = (name || '').split(' ')[0];
+  const n = (name || '').trim();
+  if (CROP_COLORS[n]) return CROP_COLORS[n];
+  const firstWord = n.split(' ')[0];
   if (CROP_COLORS[firstWord]) return CROP_COLORS[firstWord];
-  return '#22c55e'; // domyślny
+  return '#22c55e';
 }
 
 // ====== ZAKŁADKI ======
@@ -683,14 +685,7 @@ async function loadFields(){
     const div = document.createElement('div');
     div.className = 'field-item';
     const cropName = field['crops']?.name || '—';
-const color = getCropColor(cropName);
-const layer = L.geoJSON({
-  type:'Feature',
-  geometry: field.geometry,
-  properties:{}
-}, {
-  style:{color:color,weight:2,fillOpacity:0.35}
-}).addTo(map);
+    const color = getCropColor(cropName);
     div.innerHTML = `
       <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
       <div class="field-actions">
@@ -764,6 +759,13 @@ async function startEditField(fieldId){
 
 async function deleteField(fieldId){
   if(!confirm('Na pewno usunąć to pole?')) return;
+
+  // najpierw usuń sezony tego pola (na wszelki wypadek, oprócz ON DELETE CASCADE)
+  await supabaseClient
+    .from('field_seasons')
+    .delete()
+    .eq('field_id', fieldId);
+
   const { error } = await supabaseClient
     .from('fields')
     .delete()
@@ -772,9 +774,17 @@ async function deleteField(fieldId){
     alert('Błąd usuwania pola');
     return;
   }
+
+  // usuń warstwę z mapy
+  if(fieldLayers[fieldId]){
+    map.removeLayer(fieldLayers[fieldId]);
+    delete fieldLayers[fieldId];
+  }
+
   alert('Pole usunięte');
   await loadFields();
   await loadTreatmentFields();
+  await loadSeasonSummary();
 }
 
 async function saveField(){
@@ -827,6 +837,13 @@ async function saveField(){
 
   if(seasonYear && cropId){
     const cropName = document.querySelector(`#fieldCrop option[value="${cropId}"]`)?.textContent || '';
+    // usuwamy poprzedni wpis sezonu dla tego pola i roku, żeby nie dublować
+    await supabaseClient
+      .from('field_seasons')
+      .delete()
+      .eq('field_id', fieldId)
+      .eq('season_year', seasonYear);
+
     await supabaseClient
       .from('field_seasons')
       .insert([{ field_id: fieldId, season_year: seasonYear, crop_name: cropName, area_ha: area }]);
@@ -843,6 +860,7 @@ async function saveField(){
 
   await loadFields();
   await loadTreatmentFields();
+  await loadSeasonSummary();
 }
 
 // ====== ZABIEGI ======
@@ -1629,7 +1647,7 @@ async function loadSeasonSummary(){
 
   const { data, error } = await supabaseClient
     .from('field_seasons')
-    .select('crop_name,area_ha')
+    .select('crop_name,area_ha,fields(name)')
     .eq('season_year', year);
 
   const box = document.getElementById('seasonSummary');
@@ -1644,21 +1662,31 @@ async function loadSeasonSummary(){
     return;
   }
 
+  // agregacja: crop_name -> { area, fields[] }
   const totals = {};
   data.forEach(r=>{
-    totals[r.crop_name] = (totals[r.crop_name] || 0) + Number(r.area_ha);
+    const name = r.crop_name;
+    if(!totals[name]){
+      totals[name] = { area:0, fields:[] };
+    }
+    totals[name].area += Number(r.area_ha);
+    if(r.fields?.name){
+      totals[name].fields.push(r.fields.name);
+    }
   });
 
   let html = `Sezon ${year}:<br>`;
-  Object.entries(totals).forEach(([name,area])=>{
-    html += `<span style="color:${getCropColor(name)};">■</span> ${name}: ${area.toFixed(2)} ha<br>`;
+  Object.entries(totals).forEach(([name,obj])=>{
+    const color = getCropColor(name);
+    const fieldsList = obj.fields.length ? obj.fields.join(', ') : '—';
+    html += `<span style="color:${color};">■</span> ${name}: ${obj.area.toFixed(2)} ha (pola: ${fieldsList})<br>`;
   });
   box.innerHTML = html;
 
- const labels = Object.keys(totals);
-const values = Object.values(totals).map(v=>Number(v.toFixed(2)));
-const barColors = labels.map(name => getCropColor(name));
-const borderColors = barColors.map(c => c);
+  const labels = Object.keys(totals);
+  const values = labels.map(n => Number(totals[n].area.toFixed(2)));
+  const barColors = labels.map(name => getCropColor(name));
+  const borderColors = barColors.map(c => c);
 
   const ctx = document.getElementById('seasonChart').getContext('2d');
   if(seasonChart) seasonChart.destroy();
@@ -1692,6 +1720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadWarehouseForTreatments();
   await loadTreatmentsList();
   await loadMachines();
+  await loadSeasonSummary();
 });
 </script>
 </body>
