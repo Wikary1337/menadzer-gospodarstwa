@@ -108,8 +108,6 @@ button.primary:hover{background:#1d4ed8}
   font-size:11px;
   background:#e5e7eb;
 }
-
-/* prosty układ kolumn w magazynie/maszynach */
 .columns{
   display:flex;
   flex-wrap:wrap;
@@ -118,8 +116,6 @@ button.primary:hover{background:#1d4ed8}
 .col{
   flex:1 1 260px;
 }
-
-/* pola wyboru w zabiegach */
 .checkbox-list{
   max-height:160px;
   overflow:auto;
@@ -131,6 +127,20 @@ button.primary:hover{background:#1d4ed8}
   display:block;
   font-size:13px;
   margin-bottom:4px;
+}
+
+/* wyszukiwarka nad mapą */
+#mapSearchRow{
+  display:flex;
+  gap:8px;
+  margin-top:6px;
+  align-items:center;
+}
+#mapSearchInput{
+  flex:1;
+  padding:6px 8px;
+  border:1px solid #d1d5db;
+  border-radius:4px;
 }
 </style>
 </head>
@@ -149,7 +159,12 @@ button.primary:hover{background:#1d4ed8}
   <!-- ======= POLA ======= -->
   <div id="fields" class="section active">
     <h2>Pola</h2>
-    <p>Narysuj granice pola na mapie satelitarnej, powierzchnia przeliczy się automatycznie.</p>
+    <p>Narysuj granice pola na mapie satelitarnej. Poniżej możesz wyszukać miejscowość.</p>
+
+    <div id="mapSearchRow">
+      <input id="mapSearchInput" placeholder="Wpisz miejscowość lub adres i naciśnij Enter">
+      <button class="primary" onclick="searchPlace()">Szukaj</button>
+    </div>
 
     <div id="map"></div>
 
@@ -167,7 +182,7 @@ button.primary:hover{background:#1d4ed8}
       <div>
         <label>Aktualna uprawa<br>
           <select id="fieldCrop">
-            <option value="">-- wybierz uprawe --</option>
+            <option value="">Ładowanie...</option>
           </select>
         </label>
       </div>
@@ -373,11 +388,13 @@ button.primary:hover{background:#1d4ed8}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Leaflet Draw JS -->
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<!-- Leaflet GeometryUtil (do obliczania pola) -->
+<script src="https://unpkg.com/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.js"></script>
 
 <script>
 // ====== KONFIGURACJA SUPABASE ======
-const SUPABASE_URL = "https://AVGRFEGHYCRSAWAOIIIL.supabase.co"; // PODMIEN
-const SUPABASE_KEY = "TWOJ_ANON_KEY_TUTAJ";                      // PODMIEN
+const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co"; // PODMIEN
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";                      // PODMIEN
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ====== ZAKŁADKI ======
@@ -388,7 +405,7 @@ function showTab(id){
   document.getElementById(id).classList.add('active');
 }
 
-// ====== MAPA POL SATELITARNA ======
+// ====== MAPA POL HYBRYDOWA ======
 let map;
 let drawnItems;
 let currentPolygonGeoJSON = null;
@@ -397,12 +414,22 @@ let fieldLayers = {}; // id -> layer
 function initMap(){
   map = L.map('map').setView([51.9, 17.0], 7);
 
-  // warstwa satelitarna Esri
-  L.tileLayer(
+  // satelita
+  const sat = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     {
       maxZoom: 19,
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      attribution: 'Tiles &copy; Esri'
+    }
+  ).addTo(map);
+
+  // nakładka dróg/nazw
+  const roads = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      maxZoom: 19,
+      opacity:0.6,
+      attribution: '&copy; OpenStreetMap'
     }
   ).addTo(map);
 
@@ -444,6 +471,14 @@ function initMap(){
       updateAreaFromLayer(layer);
     });
   });
+
+  // Enter w wyszukiwarce
+  document.getElementById('mapSearchInput').addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      searchPlace();
+    }
+  });
 }
 
 function updateAreaFromLayer(layer){
@@ -456,21 +491,44 @@ function updateAreaFromLayer(layer){
   document.getElementById('fieldArea').value = areaHa.toFixed(2);
 }
 
+// prosta wyszukiwarka miejscowości przez Nominatim
+async function searchPlace(){
+  const q = document.getElementById('mapSearchInput').value.trim();
+  if(!q) return;
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+    const res = await fetch(url, {headers:{'Accept-Language':'pl'}});
+    const data = await res.json();
+    if(data && data[0]){
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+      map.setView([lat,lon], 14);
+    }else{
+      alert('Nie znaleziono lokalizacji');
+    }
+  }catch(e){
+    console.log('Search error', e);
+    alert('Błąd wyszukiwania');
+  }
+}
+
 // ====== POBIERANIE UPRWAW I PÓL ======
 async function loadCrops(){
+  const select = document.getElementById('fieldCrop');
+  select.innerHTML = '<option value="">Ładowanie...</option>';
+
   const { data, error } = await supabaseClient
     .from('crops')
     .select('*')
     .order('name', { ascending: true });
 
-  const select = document.getElementById('fieldCrop');
-  select.innerHTML = '<option value="">-- wybierz uprawe --</option>';
-
   if(error){
     console.log('Crops load error', error);
+    select.innerHTML = '<option value="">Błąd ładowania</option>';
     return;
   }
 
+  select.innerHTML = '<option value="">-- wybierz uprawe --</option>';
   (data || []).forEach(crop => {
     const opt = document.createElement('option');
     opt.value = crop.id;
@@ -485,7 +543,7 @@ async function loadFields(){
 
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('id,name,area_ha,current_crop_id,crops(name),geometry')
+    .select('id,name,area_ha,current_crop_id,crops!fields_current_crop_id_fkey(name),geometry')
     .order('id', { ascending: true });
 
   if(error){
@@ -494,7 +552,6 @@ async function loadFields(){
     return;
   }
 
-  // wyczyść warstwy
   Object.values(fieldLayers).forEach(l=>map.removeLayer(l));
   fieldLayers = {};
 
@@ -507,12 +564,11 @@ async function loadFields(){
   data.forEach(field => {
     const div = document.createElement('div');
     div.className = 'field-item';
-    const cropName = field.crops?.name || '—';
+    const cropName = field['crops']?.name || '—';
     div.innerHTML = `<strong>${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}`;
     div.onclick = () => focusFieldOnMap(field.id);
     container.appendChild(div);
 
-    // warstwa na mapie z popupem
     if(field.geometry){
       const layer = L.geoJSON({
         type:'Feature',
@@ -578,7 +634,7 @@ async function saveField(){
   currentPolygonGeoJSON = null;
 
   await loadFields();
-  await loadTreatmentFields(); // aktualizacja listy pól w zabiegach
+  await loadTreatmentFields();
 }
 
 // ====== ZABIEGI ======
@@ -608,7 +664,6 @@ async function loadTreatmentFields(){
 }
 
 async function loadWarehouseForTreatments(){
-  // pobierz wszystkie pozycje magazynu
   const { data, error } = await supabaseClient
     .from('warehouse_items')
     .select('*')
@@ -674,7 +729,6 @@ async function saveTreatment(){
     return;
   }
 
-  // pola
   const fieldCheckboxes = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
   if(fieldCheckboxes.length===0){
     alert('Zaznacz co najmniej jedno pole');
@@ -688,7 +742,6 @@ async function saveTreatment(){
     fieldIds.push(Number(cb.value));
   });
 
-  // środki
   const rows = document.querySelectorAll('#treatItemsBody tr');
   const items = [];
   for(const row of rows){
@@ -711,7 +764,6 @@ async function saveTreatment(){
     if(!confirm('Nie wybrano żadnych środków z magazynu. Zapisać zabieg bez magazynu?')) return;
   }
 
-  // 1) wstaw zabieg
   const { data: inserted, error } = await supabaseClient
     .from('treatments')
     .insert([{ date, type, note }])
@@ -726,31 +778,19 @@ async function saveTreatment(){
 
   const treatmentId = inserted.id;
 
-  // 2) powiązania z polami
   const tfRows = fieldIds.map(fid=>({ treatment_id:treatmentId, field_id:fid }));
   const { error: tfErr } = await supabaseClient
     .from('treatment_fields')
     .insert(tfRows);
-  if(tfErr){
-    console.log('Insert treatment_fields error', tfErr);
-  }
+  if(tfErr) console.log('Insert treatment_fields error', tfErr);
 
-  // 3) zużyte środki + aktualizacja magazynu
   if(items.length>0){
     const tiRows = items.map(i=>({ ...i, treatment_id:treatmentId }));
     const { error: tiErr } = await supabaseClient
       .from('treatment_items')
       .insert(tiRows);
-    if(tiErr){
-      console.log('Insert treatment_items error', tiErr);
-    }
+    if(tiErr) console.log('Insert treatment_items error', tiErr);
 
-    // zdejmij stany z magazynu
-    for(const it of items){
-      await supabaseClient.rpc('noop'); // placeholder gdybyś miał edge funkcje; na razie zrobimy prosto:
-    }
-
-    // prosta aktualizacja: pobierz item, odejmij ilość
     for(const it of items){
       const { data: wh, error: wErr } = await supabaseClient
         .from('warehouse_items')
@@ -826,7 +866,6 @@ async function loadTreatmentsList(){
   });
 }
 
-// przeliczanie dawek po każdej zmianie ilości
 document.addEventListener('input', e=>{
   if(e.target.classList.contains('treatItemAmount')){
     const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
@@ -846,7 +885,6 @@ document.getElementById('treatFieldsList').addEventListener('change', e=>{
 
 // ====== MAGAZYN ======
 async function ensureFuelRow(){
-  // Diesel jako kategoria fuel, unit 'l'
   const { data, error } = await supabaseClient
     .from('warehouse_items')
     .select('*')
