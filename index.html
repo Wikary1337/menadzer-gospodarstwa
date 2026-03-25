@@ -682,55 +682,59 @@ async function loadFields(){
 
   container.innerHTML = '';
   data.forEach(field => {
-    const div = document.createElement('div');
-    div.className = 'field-item';
-    const cropName = field['crops']?.name || '—';
-    const color = getCropColor(cropName);
+  const div = document.createElement('div');
+  div.className = 'field-item';
+  const cropName = field['crops']?.name || '—';
+  const color = getCropColor(cropName);
 
-    div.dataset.fieldId = field.id;
+  // pokaż id z bazy w UI, żebyś mógł porównać w Supabase
+  div.dataset.fieldId = field.id;
 
-    div.innerHTML = `
-      <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
-      <div class="field-actions">
-        <button class="btn-edit">Edytuj</button>
-        <button class="btn-delete">Usuń</button>
-      </div>
-    `;
+  div.innerHTML = `
+    <strong style="color:${color}">${field.name}</strong>
+    (id: ${field.id}) – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
+    <div class="field-actions">
+      <button class="btn-edit">Edytuj</button>
+      <button class="btn-delete">Usuń</button>
+    </div>
+  `;
 
-    div.addEventListener('click', () => focusFieldOnMap(field.id));
+  div.addEventListener('click', () => focusFieldOnMap(field.id));
 
-    const btnEdit = div.querySelector('.btn-edit');
-    const btnDelete = div.querySelector('.btn-delete');
+  const btnEdit = div.querySelector('.btn-edit');
+  const btnDelete = div.querySelector('.btn-delete');
 
-    btnEdit.addEventListener('click', e => {
-      e.stopPropagation();
-      const fid = Number(div.dataset.fieldId);
-      startEditField(fid);
-    });
-
-    btnDelete.addEventListener('click', e => {
-      e.stopPropagation();
-      const fid = Number(div.dataset.fieldId);
-      deleteField(fid);
-    });
-
-    container.appendChild(div);
-
-    if(field.geometry){
-      const layer = L.geoJSON({
-        type:'Feature',
-        geometry: field.geometry,
-        properties:{}
-      }, {
-        style:{color:color,weight:2,fillOpacity:0.35}
-      }).addTo(map);
-
-      layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
-      fieldLayers[field.id] = layer;
-      bounds.extend(layer.getBounds());
-    }
+  btnEdit.addEventListener('click', e => {
+    e.stopPropagation();
+    const fid = Number(div.dataset.fieldId);
+    console.log('EDIT field id =', fid);
+    startEditField(fid);
   });
 
+  btnDelete.addEventListener('click', e => {
+    e.stopPropagation();
+    const fid = Number(div.dataset.fieldId);
+    console.log('DELETE field id =', fid);
+    deleteField(fid);
+  });
+
+  container.appendChild(div);
+
+  if(field.geometry){
+    const layer = L.geoJSON({
+      type:'Feature',
+      geometry: field.geometry,
+      properties:{}
+    }, {
+      style:{color:color,weight:2,fillOpacity:0.35}
+    }).addTo(map);
+
+    layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
+    fieldLayers[field.id] = layer;
+    bounds.extend(layer.getBounds());
+  }
+});
+  
   if(bounds.isValid()){
     map.fitBounds(bounds.pad(0.2));
   }else{
