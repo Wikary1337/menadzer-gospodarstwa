@@ -1207,17 +1207,14 @@ document.addEventListener('input', e=>{
     computeDosesForTreatmentRows(totalArea);
   }
 });
-const treatFieldsListEl = document.getElementById('treatFieldsList');
-if (treatFieldsListEl) {
-  treatFieldsListEl.addEventListener('change', e=>{
-    if(e.target.type === 'checkbox'){
-      const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
-      let totalArea = 0;
-      checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
-      computeDosesForTreatmentRows(totalArea);
-    }
-  });
-}
+document.addEventListener('change', e=>{
+  if(e.target.closest('#treatFieldsList') && e.target.type === 'checkbox'){
+    const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
+    let totalArea = 0;
+    checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
+    computeDosesForTreatmentRows(totalArea);
+  }
+});
 
 /* MAGAZYN */
 
