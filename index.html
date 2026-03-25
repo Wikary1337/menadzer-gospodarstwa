@@ -497,6 +497,28 @@ let seasonChart = null;
 const KURZNIE_LAT = 50.692;
 const KURZNIE_LON = 17.747;
 
+  // kolory upraw – możesz dopisywać kolejne
+const CROP_COLORS = {
+  'Pszenica ozima': '#facc15',     // żółty
+  'Pszenica jara': '#fde047',
+  'Kukurydza': '#f97316',          // pomarańczowy
+  'Kukurydza na kiszonke': '#fb923c',
+  'Jęczmień jary': '#a3e635',
+  'Jęczmień ozimy': '#4ade80',
+  'Żyto ozime': '#22c55e',
+  'Owies': '#bef264',
+  'Rzepak ozimy': '#eab308',
+  'Soja': '#16a34a',
+  'Groch': '#22c1c3',
+  'Burak cukrowy': '#ef4444',
+  'Ziemniaki': '#a855f7',
+  'Łąka trwała': '#16a34a',
+  'Lucerna wieloletnia': '#15803d'
+};
+function getCropColor(name){
+  return CROP_COLORS[name] || '#22c55e'; // domyślnie zielony
+}
+  
 // ====== ZAKŁADKI ======
 function showTab(id){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
@@ -654,24 +676,15 @@ async function loadFields(){
     const div = document.createElement('div');
     div.className = 'field-item';
     const cropName = field['crops']?.name || '—';
-    div.innerHTML = `
-      <strong>${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
-      <div class="field-actions">
-        <button onclick="startEditField(${field.id});event.stopPropagation();">Edytuj</button>
-        <button onclick="deleteField(${field.id});event.stopPropagation();">Usuń</button>
-      </div>
-    `;
-    div.onclick = () => focusFieldOnMap(field.id);
-    container.appendChild(div);
+const color = getCropColor(cropName);
 
-    if(field.geometry){
-      const layer = L.geoJSON({
-        type:'Feature',
-        geometry: field.geometry,
-        properties:{}
-      }, {
-        style:{color:'#22c55e',weight:2,fillOpacity:0.25}
-      }).addTo(map);
+const layer = L.geoJSON({
+  type:'Feature',
+  geometry: field.geometry,
+  properties:{}
+}, {
+  style:{color:color,weight:2,fillOpacity:0.35}
+}).addTo(map);
 
       layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
       fieldLayers[field.id] = layer;
@@ -1623,29 +1636,30 @@ async function loadSeasonSummary(){
   });
   box.innerHTML = html;
 
-  const labels = Object.keys(totals);
-  const values = Object.values(totals).map(v=>Number(v.toFixed(2)));
+ const labels = Object.keys(totals);
+const values = Object.values(totals).map(v=>Number(v.toFixed(2)));
+const barColors = labels.map(name => getCropColor(name));
+const borderColors = barColors.map(c => c);
 
-  const ctx = document.getElementById('seasonChart').getContext('2d');
-  if(seasonChart) seasonChart.destroy();
-  seasonChart = new Chart(ctx, {
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:`Powierzchnia [ha] – ${year}`,
-        data:values,
-        backgroundColor:'rgba(37,99,235,0.5)',
-        borderColor:'rgba(37,99,235,1)',
-        borderWidth:1
-      }]
-    },
-    options:{
-      responsive:true,
-      scales:{ y:{ beginAtZero:true } }
-    }
-  });
-}
+const ctx = document.getElementById('seasonChart').getContext('2d');
+if(seasonChart) seasonChart.destroy();
+seasonChart = new Chart(ctx, {
+  type:'bar',
+  data:{
+    labels,
+    datasets:[{
+      label:`Powierzchnia [ha] – ${year}`,
+      data:values,
+      backgroundColor: barColors,
+      borderColor: borderColors,
+      borderWidth:1
+    }]
+  },
+  options:{
+    responsive:true,
+    scales:{ y:{ beginAtZero:true } }
+  }
+});
 
 // ====== START ======
 document.addEventListener('DOMContentLoaded', async () => {
