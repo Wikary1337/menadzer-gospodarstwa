@@ -278,6 +278,23 @@ button.primary:hover{background:#1d4ed8}
           </tbody>
         </table>
         <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
+
+        <!-- ŚRODEK SPOZA MAGAZYNU -->
+        <h3 style="margin-top:8px;">Środek jednorazowy (poza magazynem)</h3>
+        <div class="form-row small">
+          <label>Nazwa środka<br>
+            <input id="extraName" placeholder="np. Nowy herbicyd">
+          </label>
+          <label>Ilość łączna<br>
+            <input id="extraAmount" type="number" step="0.01" placeholder="np. 5">
+          </label>
+          <label>Jednostka<br>
+            <input id="extraUnit" placeholder="l / kg">
+          </label>
+          <label>Dawka / ha<br>
+            <input id="extraDose" type="number" step="0.01" readonly>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -923,6 +940,16 @@ function computeDosesForTreatmentRows(totalArea){
   });
 }
 
+function computeExtraDose(totalArea){
+  const amount = parseFloat(document.getElementById('extraAmount').value || '0');
+  const doseInput = document.getElementById('extraDose');
+  if(totalArea > 0 && amount > 0){
+    doseInput.value = (amount / totalArea).toFixed(2);
+  } else {
+    doseInput.value = '';
+  }
+}
+
 async function fetchDayTemperatureForKurznie(dateStr){
   try{
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${KURZNIE_LAT}&longitude=${KURZNIE_LON}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FWarsaw&start_date=${dateStr}&end_date=${dateStr}`;
@@ -977,12 +1004,34 @@ async function saveTreatment(){
     items.push({
       warehouse_item_id:Number(whId),
       amount_used:amount,
-      dose_per_ha:dose
+      dose_per_ha:dose,
+      extra_name:null,
+      extra_unit:null
+    });
+  }
+
+  // środek jednorazowy spoza magazynu (ale jeśli istnieje w magazynie, też odejmie stan)
+  const extraName = document.getElementById('extraName').value.trim();
+  const extraAmount = parseFloat(document.getElementById('extraAmount').value || '0');
+  const extraUnit = document.getElementById('extraUnit').value.trim();
+  let extraDose = null;
+
+  if(extraName && !isNaN(extraAmount) && extraAmount > 0){
+    if(totalArea > 0){
+      extraDose = extraAmount / totalArea;
+      document.getElementById('extraDose').value = extraDose.toFixed(2);
+    }
+    items.push({
+      warehouse_item_id: null,
+      amount_used: extraAmount,
+      dose_per_ha: extraDose,
+      extra_name: extraName,
+      extra_unit: extraUnit || ''
     });
   }
 
   if(items.length===0){
-    if(!confirm('Nie wybrano żadnych środków z magazynu. Zapisać zabieg bez magazynu?')) return;
+    if(!confirm('Nie wybrano żadnych środków. Zapisać zabieg bez środków?')) return;
   }
 
   if(!temp){
@@ -1033,8 +1082,12 @@ async function saveTreatment(){
       .insert(tiRows);
     if(tiErr) console.log('Insert treatment_items error', tiErr);
 
+    // Odejmowanie z magazynu:
+    // 1) wiersze powiązane przez warehouse_item_id (jak wcześniej)
+    // 2) środek jednorazowy: jeśli istnieje w plant_protection o tej samej nazwie – też odejmij
     if(!editingTreatmentId){
-      for(const it of items){
+      // 1) po id
+      for(const it of items.filter(i=>i.warehouse_item_id)){
         const { data: wh, error: wErr } = await supabaseClient
           .from('warehouse_items')
           .select('qty')
@@ -1046,6 +1099,23 @@ async function saveTreatment(){
           .from('warehouse_items')
           .update({ qty:newQty })
           .eq('id', it.warehouse_item_id);
+      }
+
+      // 2) środek jednorazowy – szukamy po nazwie w plant_protection
+      if(extraName && !isNaN(extraAmount) && extraAmount > 0){
+        const { data: whExtra, error: whExtraErr } = await supabaseClient
+          .from('warehouse_items')
+          .select('id,qty')
+          .eq('category','plant_protection')
+          .eq('name', extraName)
+          .maybeSingle();
+        if(!whExtraErr && whExtra){
+          const newQty = Number(whExtra.qty) - extraAmount;
+          await supabaseClient
+            .from('warehouse_items')
+            .update({ qty:newQty })
+            .eq('id', whExtra.id);
+        }
       }
     }
   }
@@ -1067,6 +1137,11 @@ async function saveTreatment(){
       <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
     </tr>
   `;
+  document.getElementById('extraName').value = '';
+  document.getElementById('extraAmount').value = '';
+  document.getElementById('extraUnit').value = '';
+  document.getElementById('extraDose').value = '';
+
   await loadWarehouseForTreatments();
   await loadWarehouseTables();
   await loadTreatmentsList();
@@ -1076,7 +1151,7 @@ async function loadTreatmentsList(){
   const box = document.getElementById('treatmentsList');
   const { data, error } = await supabaseClient
     .from('treatments')
-    .select('id,date,type,note,temperature_c,treatment_fields(field_id,fields(name)),treatment_items(amount_used,dose_per_ha,warehouse_items(name,unit))')
+    .select('id,date,type,note,temperature_c,treatment_fields(field_id,fields(name)),treatment_items(amount_used,dose_per_ha,extra_name,extra_unit,warehouse_items(name,unit))')
     .order('date',{ascending:false});
 
   if(error){
@@ -1096,11 +1171,12 @@ async function loadTreatmentsList(){
     div.style.padding = '4px 0';
     const fieldsNames = (t.treatment_fields || []).map(tf=>tf.fields?.name).filter(Boolean).join(', ') || '—';
     const itemsText = (t.treatment_items || []).map(it=>{
-      const nm = it.warehouse_items?.name || '—';
-      const unit = it.warehouse_items?.unit || '';
+      const fromWarehouse = it.warehouse_items?.name;
+      const name = fromWarehouse || it.extra_name || '—';
+      const unit = fromWarehouse ? (it.warehouse_items?.unit || '') : (it.extra_unit || '');
       const amt = it.amount_used;
       const dose = it.dose_per_ha;
-      return `${nm}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
+      return `${name}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
     }).join('; ');
     div.innerHTML = `
       <div><strong>${t.date}</strong> – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
@@ -1143,25 +1219,44 @@ async function editTreatment(id){
 
   const { data: items, error: itErr } = await supabaseClient
     .from('treatment_items')
-    .select('warehouse_item_id,amount_used')
+    .select('warehouse_item_id,amount_used,extra_name,extra_unit')
     .eq('treatment_id', id);
   const tbody = document.getElementById('treatItemsBody');
   tbody.innerHTML = '';
+  document.getElementById('extraName').value = '';
+  document.getElementById('extraAmount').value = '';
+  document.getElementById('extraUnit').value = '';
+  document.getElementById('extraDose').value = '';
+
+  let extraHandled = false;
+
   if(!itErr && items && items.length){
     items.forEach(it=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <select class="treatItemSelect">
-            <option value="">-- wybierz --</option>
-          </select>
-        </td>
-        <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px" value="${it.amount_used}"></td>
-        <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
-      `;
-      tbody.appendChild(tr);
+      if(it.extra_name){
+        // to jest środek jednorazowy
+        if(!extraHandled){
+          extraHandled = true;
+          document.getElementById('extraName').value = it.extra_name;
+          document.getElementById('extraAmount').value = it.amount_used;
+          document.getElementById('extraUnit').value = it.extra_unit || '';
+        }
+      }else{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <select class="treatItemSelect">
+              <option value="">-- wybierz --</option>
+            </select>
+          </td>
+          <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px" value="${it.amount_used}"></td>
+          <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+        `;
+        tbody.appendChild(tr);
+      }
     });
-  }else{
+  }
+
+  if(tbody.children.length === 0){
     tbody.innerHTML = `
       <tr>
         <td>
@@ -1174,14 +1269,19 @@ async function editTreatment(id){
       </tr>
     `;
   }
+
   await loadWarehouseForTreatments();
   if(!itErr && items && items.length){
     const selects = document.querySelectorAll('.treatItemSelect');
-    items.forEach((it, idx)=>{
-      const sel = selects[idx];
-      if(sel){ sel.value = it.warehouse_item_id; }
+    let idx = 0;
+    items.forEach(it=>{
+      if(!it.extra_name){
+        const sel = selects[idx++];
+        if(sel){ sel.value = it.warehouse_item_id; }
+      }
     });
   }
+
   alert('Tryb edycji zabiegu – zmień dane i kliknij „Zapisz zabieg”.');
 }
 
@@ -1200,11 +1300,12 @@ async function deleteTreatment(id){
 }
 
 document.addEventListener('input', e=>{
-  if(e.target.classList.contains('treatItemAmount')){
+  if(e.target.classList.contains('treatItemAmount') || e.target.id === 'extraAmount'){
     const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
     let totalArea = 0;
     checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
     computeDosesForTreatmentRows(totalArea);
+    computeExtraDose(totalArea);
   }
 });
 document.addEventListener('change', e=>{
@@ -1213,6 +1314,7 @@ document.addEventListener('change', e=>{
     let totalArea = 0;
     checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
     computeDosesForTreatmentRows(totalArea);
+    computeExtraDose(totalArea);
   }
 });
 
