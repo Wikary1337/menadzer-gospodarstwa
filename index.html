@@ -5,18 +5,14 @@
 <title>Gospodarstwo – Panel</title>
 
 <!-- Leaflet CSS -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <!-- Leaflet Draw CSS -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
 
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Chart.js do wykresów -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -163,6 +159,12 @@ button.primary:hover{background:#1d4ed8}
   display:block;
   font-size:12px;
 }
+
+/* sezony */
+#seasonsChartWrapper{
+  max-width:600px;
+  margin-top:12px;
+}
 </style>
 </head>
 
@@ -175,6 +177,7 @@ button.primary:hover{background:#1d4ed8}
     <button onclick="showTab('treatments')">Zabiegi</button>
     <button onclick="showTab('warehouse')">Magazyn</button>
     <button onclick="showTab('machines')">Maszyny</button>
+    <button onclick="showTab('seasons')">Sezony</button>
   </div>
 
   <!-- ======= POLA ======= -->
@@ -205,6 +208,11 @@ button.primary:hover{background:#1d4ed8}
           <select id="fieldCrop">
             <option value="">Ładowanie...</option>
           </select>
+        </label>
+      </div>
+      <div>
+        <label>Rok sezonu<br>
+          <input id="fieldSeasonYear" type="number" value="2026">
         </label>
       </div>
     </div>
@@ -444,17 +452,34 @@ button.primary:hover{background:#1d4ed8}
     </div>
   </div>
 
+  <!-- ======= SEZONY ======= -->
+  <div id="seasons" class="section">
+    <h2>Sezony i płodozmian</h2>
+    <div class="form-row">
+      <label>Rok sezonu<br>
+        <input id="seasonYearSelect" type="number" value="2026">
+      </label>
+      <button class="primary" onclick="loadSeasonSummary()">Pokaż sezon</button>
+    </div>
+
+    <div id="seasonSummary" class="small" style="margin-top:10px;"></div>
+
+    <div id="seasonsChartWrapper">
+      <canvas id="seasonChart"></canvas>
+    </div>
+  </div>
+
 </div>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Leaflet Draw JS -->
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<!-- Leaflet GeometryUtil (do obliczania pola) -->
+<!-- GeometryUtil -->
 <script src="https://unpkg.com/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.js"></script>
 
 <script>
-// ====== KONFIGURACJA SUPABASE ======
+// ====== SUPABASE ======
 const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -467,6 +492,7 @@ let fieldLayers = {};
 let editingFieldId = null;
 let editingMachineId = null;
 let editingTreatmentId = null;
+let seasonChart = null;
 
 const KURZNIE_LAT = 50.692;
 const KURZNIE_LON = 17.747;
@@ -477,27 +503,21 @@ function showTab(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelector(`.tabs button[onclick="showTab('${id}')"]`).classList.add('active');
   document.getElementById(id).classList.add('active');
+  if(id === 'seasons') loadSeasonSummary();
 }
 
-// ====== MAPA POL HYBRYDOWA ======
+// ====== MAPA ======
 function initMap(){
-  map = L.map('map').setView([51.9, 17.0], 7);
+  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
 
-  const sat = L.tileLayer(
+  L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {
-      maxZoom: 19,
-      attribution: 'Tiles &copy; Esri'
-    }
+    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
   ).addTo(map);
 
-  const roads = L.tileLayer(
+  L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-      maxZoom: 19,
-      opacity:0.6,
-      attribution: '&copy; OpenStreetMap'
-    }
+    { maxZoom: 19, opacity:0.6, attribution: '&copy; OpenStreetMap' }
   ).addTo(map);
 
   drawnItems = new L.FeatureGroup();
@@ -506,20 +526,10 @@ function initMap(){
   const drawControl = new L.Control.Draw({
     position: 'topleft',
     draw: {
-      polygon: {
-        allowIntersection:false,
-        showArea:true,
-        metric:true
-      },
-      polyline:false,
-      rectangle:false,
-      circle:false,
-      marker:false,
-      circlemarker:false
+      polygon: { allowIntersection:false, showArea:true, metric:true },
+      polyline:false, rectangle:false, circle:false, marker:false, circlemarker:false
     },
-    edit: {
-      featureGroup: drawnItems
-    }
+    edit: { featureGroup: drawnItems }
   });
   map.addControl(drawControl);
 
@@ -557,7 +567,6 @@ function updateAreaFromLayer(layer){
   document.getElementById('fieldArea').value = areaHa.toFixed(2);
 }
 
-// wyszukiwarka miejscowości
 async function searchPlace(){
   const q = document.getElementById('mapSearchInput').value.trim();
   if(!q) return;
@@ -578,7 +587,7 @@ async function searchPlace(){
   }
 }
 
-// ====== UPR AWY I POLA ======
+// ====== UPR AWY / POLA ======
 async function loadCrops(){
   const select = document.getElementById('fieldCrop');
   select.innerHTML = '<option value="">Ładowanie...</option>';
@@ -638,6 +647,8 @@ async function loadFields(){
     return;
   }
 
+  const bounds = L.latLngBounds();
+
   container.innerHTML = '';
   data.forEach(field => {
     const div = document.createElement('div');
@@ -664,8 +675,15 @@ async function loadFields(){
 
       layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
       fieldLayers[field.id] = layer;
+      bounds.extend(layer.getBounds());
     }
   });
+
+  if(bounds.isValid()){
+    map.fitBounds(bounds.pad(0.2));
+  }else{
+    map.setView([KURZNIE_LAT, KURZNIE_LON], 13);
+  }
 }
 
 async function focusFieldOnMap(fieldId){
@@ -704,7 +722,7 @@ async function startEditField(fieldId){
     map.fitBounds(layer.getBounds());
     updateAreaFromLayer(layer);
   }
-  alert('Tryb edycji pola – zmień dane i kliknij „Zapisz pole”, aby nadpisać.');
+  alert('Tryb edycji pola – zmień dane i kliknij „Zapisz pole”.');
 }
 
 async function deleteField(fieldId){
@@ -727,6 +745,7 @@ async function saveField(){
   const area = parseFloat(document.getElementById('fieldArea').value);
   const cropId = document.getElementById('fieldCrop').value || null;
   const notes = document.getElementById('fieldNotes').value.trim();
+  const seasonYear = parseInt(document.getElementById('fieldSeasonYear').value || '0');
 
   if(!name){
     alert('Podaj nazwę pola');
@@ -746,21 +765,34 @@ async function saveField(){
   };
 
   let error;
+  let fieldId;
   if(editingFieldId){
     ({ error } = await supabaseClient
       .from('fields')
       .update(field)
       .eq('id', editingFieldId));
+    fieldId = editingFieldId;
   }else{
-    ({ error } = await supabaseClient
+    const res = await supabaseClient
       .from('fields')
-      .insert([field]));
+      .insert([field])
+      .select('id')
+      .single();
+    error = res.error;
+    fieldId = res.data?.id;
   }
 
   if(error){
     console.log('Insert/Update field error', error);
     alert('Błąd zapisu pola');
     return;
+  }
+
+  if(seasonYear && cropId){
+    const cropName = document.querySelector(`#fieldCrop option[value="${cropId}"]`)?.textContent || '';
+    await supabaseClient
+      .from('field_seasons')
+      .insert([{ field_id: fieldId, season_year: seasonYear, crop_name: cropName, area_ha: area }]);
   }
 
   alert(editingFieldId ? 'Pole zaktualizowane' : 'Pole zapisane');
@@ -859,7 +891,6 @@ function computeDosesForTreatmentRows(totalArea){
   });
 }
 
-// pogoda Kurznie
 async function fetchDayTemperatureForKurznie(dateStr){
   try{
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${KURZNIE_LAT}&longitude=${KURZNIE_LON}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FWarsaw&start_date=${dateStr}&end_date=${dateStr}`;
@@ -1045,6 +1076,7 @@ async function loadTreatmentsList(){
       <div>Środki: ${itemsText || '—'}</div>
       <div class="small">Notatka: ${t.note || '—'}</div>
       <button onclick="editTreatment(${t.id})">Edytuj</button>
+      <button onclick="deleteTreatment(${t.id})">Usuń</button>
     `;
     box.appendChild(div);
   });
@@ -1084,7 +1116,7 @@ async function editTreatment(id){
   const tbody = document.getElementById('treatItemsBody');
   tbody.innerHTML = '';
   if(!itErr && items && items.length){
-    items.forEach(it=>{
+    for(const it of items){
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
@@ -1096,7 +1128,7 @@ async function editTreatment(id){
         <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
       `;
       tbody.appendChild(tr);
-    });
+    }
   }else{
     tbody.innerHTML = `
       <tr>
@@ -1111,7 +1143,33 @@ async function editTreatment(id){
     `;
   }
   await loadWarehouseForTreatments();
+
+  // zaznacz wybrane środki w selectach
+  if(!itErr && items && items.length){
+    const selects = document.querySelectorAll('.treatItemSelect');
+    items.forEach((it, idx)=>{
+      const sel = selects[idx];
+      if(sel){
+        sel.value = it.warehouse_item_id;
+      }
+    });
+  }
+
   alert('Tryb edycji zabiegu – zmień dane i kliknij „Zapisz zabieg”.');
+}
+
+async function deleteTreatment(id){
+  if(!confirm('Na pewno usunąć ten zabieg?')) return;
+  const { error } = await supabaseClient
+    .from('treatments')
+    .delete()
+    .eq('id', id);
+  if(error){
+    alert('Błąd usuwania zabiegu');
+    return;
+  }
+  alert('Zabieg usunięty');
+  await loadTreatmentsList();
 }
 
 document.addEventListener('input', e=>{
@@ -1529,6 +1587,63 @@ async function loadServicesForMachine(machineId){
       <span class="small">Uwagi: ${s.note || '—'}</span>
     `;
     box.appendChild(div);
+  });
+}
+
+// ====== SEZONY ======
+async function loadSeasonSummary(){
+  const year = parseInt(document.getElementById('seasonYearSelect').value || '0');
+  if(!year) return;
+
+  const { data, error } = await supabaseClient
+    .from('field_seasons')
+    .select('crop_name,area_ha')
+    .eq('season_year', year);
+
+  const box = document.getElementById('seasonSummary');
+  if(error){
+    console.log('Season load error', error);
+    box.textContent = 'Błąd ładowania sezonu';
+    return;
+  }
+  if(!data || data.length===0){
+    box.textContent = 'Brak danych dla tego roku. Przy zapisie pola podaj rok sezonu.';
+    if(seasonChart) seasonChart.destroy();
+    return;
+  }
+
+  const totals = {};
+  data.forEach(r=>{
+    totals[r.crop_name] = (totals[r.crop_name] || 0) + Number(r.area_ha);
+  });
+
+  let html = `Sezon ${year}:<br>`;
+  Object.entries(totals).forEach(([name,area])=>{
+    html += `${name}: ${area.toFixed(2)} ha<br>`;
+  });
+  box.innerHTML = html;
+
+  const labels = Object.keys(totals);
+  const values = Object.values(totals).map(v=>Number(v.toFixed(2)));
+
+  const ctx = document.getElementById('seasonChart').getContext('2d');
+  if(seasonChart) seasonChart.destroy();
+  seasonChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:`Powierzchnia [ha] – ${year}`,
+        data:values,
+        backgroundColor:'rgba(37,99,235,0.5)',
+        borderColor:'rgba(37,99,235,1)',
+        borderWidth:1
+      }]
+    },
+    options:{
+      responsive:true,
+      scales:{ y:{ beginAtZero:true } }
+    }
   });
 }
 
