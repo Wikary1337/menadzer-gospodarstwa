@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Gospodarstwo – Pola</title>
+
+<!-- Leaflet CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<!-- Leaflet Draw CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
+/>
+
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:Arial,sans-serif;
+  background:#f3f3f3;
+  padding:20px;
+}
+.container{
+  max-width:1200px;
+  margin:auto;
+  background:#fff;
+  padding:16px;
+  border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+h1{margin-bottom:10px}
+.tabs{margin-bottom:12px}
+.tabs button{
+  margin-right:6px;
+  padding:6px 10px;
+  border:none;
+  border-radius:4px;
+  background:#e5e7eb;
+  cursor:pointer;
+}
+.tabs button.active{background:#2563eb;color:#fff}
+.section{display:none}
+.section.active{display:block}
+#map{
+  width:100%;
+  height:500px;
+  border:1px solid #e5e7eb;
+  border-radius:6px;
+  margin-top:8px;
+}
+.form-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:10px;
+}
+.form-row label{
+  font-size:13px;
+}
+.form-row input, .form-row select, .form-row textarea{
+  padding:6px 8px;
+  border:1px solid #d1d5db;
+  border-radius:4px;
+  min-width:180px;
+}
+button.primary{
+  background:#2563eb;
+  color:#fff;
+  border:none;
+  padding:8px 14px;
+  border-radius:4px;
+  cursor:pointer;
+  margin-top:10px;
+}
+button.primary:hover{background:#1d4ed8}
+#fieldsList{
+  margin-top:16px;
+  border-top:1px solid #e5e7eb;
+  padding-top:10px;
+}
+.field-item{
+  padding:6px 0;
+  border-bottom:1px solid #f3f4f6;
+  cursor:pointer;
+}
+.field-item:hover{background:#f9fafb}
+.small{font-size:12px;color:#6b7280}
+@media(max-width:700px){
+  #map{height:380px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>Gospodarstwo – Pola</h1>
+
+  <div class="tabs">
+    <button class="active" onclick="showTab('fields')">Pola</button>
+    <button onclick="showTab('treatments')">Zabiegi</button>
+    <button onclick="showTab('warehouse')">Magazyn</button>
+    <button onclick="showTab('machines')">Maszyny</button>
+  </div>
+
+  <!-- ======= POLA ======= -->
+  <div id="fields" class="section active">
+    <h2>Pola</h2>
+    <p>Na mapie narysuj granice pola (narzędzie wielokąta), a następnie uzupełnij nazwę i uprawę.</p>
+
+    <div id="map"></div>
+
+    <div class="form-row">
+      <div>
+        <label>Nazwa pola<br>
+          <input id="fieldName" placeholder="Np. Pszenica przy drodze">
+        </label>
+      </div>
+      <div>
+        <label>Powierzchnia [ha]<br>
+          <input id="fieldArea" readonly>
+        </label>
+      </div>
+      <div>
+        <label>Aktualna uprawa<br>
+          <select id="fieldCrop">
+            <option value="">-- wybierz uprawe --</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div style="flex:1">
+        <label>Uwagi<br>
+          <textarea id="fieldNotes" rows="2" style="width:100%;"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <button class="primary" onclick="saveField()">Zapisz pole</button>
+
+    <div id="fieldsList">
+      <h3>Twoje pola</h3>
+      <div id="fieldsContainer" class="small">Ładowanie...</div>
+    </div>
+  </div>
+
+  <!-- ======= placeholdery pozostałych zakładek ======= -->
+  <div id="treatments" class="section">
+    <h2>Zabiegi</h2>
+    <p>Tu później dodamy formularz zabiegów powiązanych z polami.</p>
+  </div>
+
+  <div id="warehouse" class="section">
+    <h2>Magazyn</h2>
+    <p>Tu później dodamy magazyn oprysków, nawozów i materiału siewnego.</p>
+  </div>
+
+  <div id="machines" class="section">
+    <h2>Maszyny</h2>
+    <p>Tu później dodamy maszyny, przeglądy i naprawy.</p>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet Draw JS -->
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+<script>
+// ====== KONFIGURACJA SUPABASE ======
+const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co"; // PODMIEN NA SWOJE
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";                      // PODMIEN NA SWOJE
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ====== PROSTE ZAKŁADKI ======
+function showTab(id){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`.tabs button[onclick="showTab('${id}')"]`).classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// ====== MAPA + RYSOWANIE POLA ======
+let map;
+let drawnItems;
+let currentPolygonGeoJSON = null;
+
+function initMap(){
+  map = L.map('map').setView([51.9, 17.0], 7); // ogólny widok na PL
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+
+  const drawControl = new L.Control.Draw({
+    position: 'topleft',
+    draw: {
+      polygon: {
+        allowIntersection:false,
+        showArea:true,
+        metric:true
+      },
+      polyline:false,
+      rectangle:false,
+      circle:false,
+      marker:false,
+      circlemarker:false
+    },
+    edit: {
+      featureGroup: drawnItems
+    }
+  });
+  map.addControl(drawControl);
+
+  map.on(L.Draw.Event.CREATED, function (event) {
+    drawnItems.clearLayers(); // tylko jedno pole na raz
+    const layer = event.layer;
+    drawnItems.addLayer(layer);
+    updateAreaFromLayer(layer);
+  });
+
+  map.on('draw:edited', function(e){
+    const layers = e.layers;
+    layers.eachLayer(layer => {
+      drawnItems.clearLayers();
+      drawnItems.addLayer(layer);
+      updateAreaFromLayer(layer);
+    });
+  });
+}
+
+function updateAreaFromLayer(layer){
+  const geojson = layer.toGeoJSON();
+  currentPolygonGeoJSON = geojson.geometry;
+
+  const latlngs = layer.getLatLngs()[0]; // pierwszy pierścień
+  let area = L.GeometryUtil.geodesicArea(latlngs); // m2
+  const areaHa = area / 10000; // ha
+  document.getElementById('fieldArea').value = areaHa.toFixed(2);
+}
+
+// ====== POBIERANIE UPRWAW I PÓL ======
+async function loadCrops(){
+  const { data, error } = await supabaseClient
+    .from('crops')
+    .select('*')
+    .order('name', { ascending: true });
+
+  const select = document.getElementById('fieldCrop');
+  select.innerHTML = '<option value="">-- wybierz uprawe --</option>';
+
+  if(error){
+    console.log('Crops load error', error);
+    return;
+  }
+
+  (data || []).forEach(crop => {
+    const opt = document.createElement('option');
+    opt.value = crop.id;
+    opt.textContent = crop.name;
+    select.appendChild(opt);
+  });
+}
+
+async function loadFields(){
+  const container = document.getElementById('fieldsContainer');
+  container.textContent = 'Ładowanie...';
+
+  const { data, error } = await supabaseClient
+    .from('fields')
+    .select('id,name,area_ha,current_crop_id,crops(name)')
+    .order('id', { ascending: true })
+    .returns();
+
+  if(error){
+    console.log('Fields load error', error);
+    container.textContent = 'Błąd ładowania pól';
+    return;
+  }
+
+  if(!data || data.length === 0){
+    container.textContent = 'Brak zapisanych pól';
+    return;
+  }
+
+  container.innerHTML = '';
+  data.forEach(field => {
+    const div = document.createElement('div');
+    div.className = 'field-item';
+    const cropName = field.crops?.name || '—';
+    div.innerHTML = `<strong>${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}`;
+    div.onclick = () => focusFieldOnMap(field.id);
+    container.appendChild(div);
+  });
+}
+
+// ====== ZAPIS POLA ======
+async function saveField(){
+  const name = document.getElementById('fieldName').value.trim();
+  const area = parseFloat(document.getElementById('fieldArea').value);
+  const cropId = document.getElementById('fieldCrop').value || null;
+  const notes = document.getElementById('fieldNotes').value.trim();
+
+  if(!name){
+    alert('Podaj nazwę pola');
+    return;
+  }
+  if(isNaN(area) || !currentPolygonGeoJSON){
+    alert('Narysuj pole na mapie, aby policzyć powierzchnię');
+    return;
+  }
+
+  const field = {
+    name,
+    area_ha: area,
+    geometry: currentPolygonGeoJSON,
+    current_crop_id: cropId ? Number(cropId) : null,
+    notes
+  };
+
+  const { error } = await supabaseClient
+    .from('fields')
+    .insert([field]);
+
+  if(error){
+    console.log('Insert field error', error);
+    alert('Błąd zapisu pola');
+    return;
+  }
+
+  alert('Pole zapisane');
+  document.getElementById('fieldName').value = '';
+  document.getElementById('fieldArea').value = '';
+  document.getElementById('fieldCrop').value = '';
+  document.getElementById('fieldNotes').value = '';
+  drawnItems.clearLayers();
+  currentPolygonGeoJSON = null;
+
+  loadFields();
+}
+
+// ====== PODGLĄD POLA NA MAPIE ======
+async function focusFieldOnMap(fieldId){
+  const { data, error } = await supabaseClient
+    .from('fields')
+    .select('geometry')
+    .eq('id', fieldId)
+    .single();
+
+  if(error || !data){
+    console.log('Focus field error', error);
+    return;
+  }
+
+  const geom = data.geometry;
+  drawnItems.clearLayers();
+
+  const layer = L.geoJSON({
+    type:'Feature',
+    geometry: geom,
+    properties:{}
+  }).getLayers()[0];
+
+  drawnItems.addLayer(layer);
+  map.fitBounds(layer.getBounds());
+  updateAreaFromLayer(layer);
+}
+
+// ====== START ======
+document.addEventListener('DOMContentLoaded', async () => {
+  initMap();
+  await loadCrops();
+  await loadFields();
+});
+</script>
+</body>
+</html>
