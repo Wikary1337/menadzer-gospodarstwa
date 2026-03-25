@@ -760,22 +760,28 @@ async function startEditField(fieldId){
 async function deleteField(fieldId){
   if(!confirm('Na pewno usunąć to pole?')) return;
 
-  // najpierw usuń sezony tego pola (na wszelki wypadek, oprócz ON DELETE CASCADE)
-  await supabaseClient
+  // diagnostyka – zobaczmy co zwraca Supabase
+  const { data: delSeasonsData, error: delSeasonsError } = await supabaseClient
     .from('field_seasons')
     .delete()
-    .eq('field_id', fieldId);
+    .eq('field_id', fieldId)
+    .select();
 
-  const { error } = await supabaseClient
+  console.log('DEL field_seasons result:', delSeasonsData, delSeasonsError);
+
+  const { data: delFieldData, error: delFieldError } = await supabaseClient
     .from('fields')
     .delete()
-    .eq('id', fieldId);
-  if(error){
-    alert('Błąd usuwania pola');
+    .eq('id', fieldId)
+    .select();
+
+  console.log('DEL fields result:', delFieldData, delFieldError);
+
+  if(delFieldError){
+    alert('Błąd usuwania pola: ' + delFieldError.message);
     return;
   }
 
-  // usuń warstwę z mapy
   if(fieldLayers[fieldId]){
     map.removeLayer(fieldLayers[fieldId]);
     delete fieldLayers[fieldId];
