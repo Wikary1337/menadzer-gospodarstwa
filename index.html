@@ -737,12 +737,18 @@ async function startEditField(fieldId){
 
 async function deleteField(fieldId){
   const id = Number(fieldId);
+  console.log('deleteField FRONT id =', id);
+  alert('Kasuję pole o id (front): ' + id);
+
   if(!confirm('Na pewno usunąć to pole?')) return;
 
-  await supabaseClient
-    .from('field_seasons')
-    .delete()
-    .eq('field_id', id);
+  const { data: checkData, error: checkError } = await supabaseClient
+    .from('fields')
+    .select('id,name')
+    .eq('id', id);
+
+  console.log('CHECK fields before delete:', checkData, checkError);
+  alert('Przed delete w Supabase jest tyle rekordów z tym id: ' + (checkData ? checkData.length : 'null'));
 
   const { data: delFieldData, error: delFieldError } = await supabaseClient
     .from('fields')
@@ -751,23 +757,9 @@ async function deleteField(fieldId){
     .select();
 
   console.log('DEL fields result:', delFieldData, delFieldError);
-
-  if(delFieldError){
-    alert('Błąd usuwania pola: ' + delFieldError.message);
-    return;
-  }
-  if(!delFieldData || delFieldData.length === 0){
-    alert('Supabase nie usunął żadnego pola – w tabeli fields brak rekordu z id = ' + id);
-  }
-
-  if(fieldLayers[id]){
-    map.removeLayer(fieldLayers[id]);
-    delete fieldLayers[id];
-  }
+  alert('Po delete rows: ' + (delFieldData ? delFieldData.length : 0) + ', error: ' + (delFieldError ? delFieldError.message : 'brak'));
 
   await loadFields();
-  await loadTreatmentFields();
-  await loadSeasonSummary();
 }
 
 async function saveField(){
