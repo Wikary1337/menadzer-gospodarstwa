@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Gospodarstwo – Pola</title>
+<title>Gospodarstwo – Panel</title>
 
 <!-- Leaflet CSS -->
 <link
@@ -34,6 +34,7 @@ body{
   box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }
 h1{margin-bottom:10px}
+h2{margin-top:10px;margin-bottom:6px}
 .tabs{margin-bottom:12px}
 .tabs button{
   margin-right:6px;
@@ -46,6 +47,7 @@ h1{margin-bottom:10px}
 .tabs button.active{background:#2563eb;color:#fff}
 .section{display:none}
 .section.active{display:block}
+
 #map{
   width:100%;
   height:500px;
@@ -53,6 +55,7 @@ h1{margin-bottom:10px}
   border-radius:6px;
   margin-top:8px;
 }
+
 .form-row{
   display:flex;
   flex-wrap:wrap;
@@ -78,27 +81,63 @@ button.primary{
   margin-top:10px;
 }
 button.primary:hover{background:#1d4ed8}
-#fieldsList{
-  margin-top:16px;
-  border-top:1px solid #e5e7eb;
-  padding-top:10px;
-}
-.field-item{
+.small{font-size:12px;color:#6b7280}
+#fieldsContainer .field-item{
   padding:6px 0;
   border-bottom:1px solid #f3f4f6;
   cursor:pointer;
 }
-.field-item:hover{background:#f9fafb}
-.small{font-size:12px;color:#6b7280}
-@media(max-width:700px){
-  #map{height:380px}
+#fieldsContainer .field-item:hover{background:#f9fafb}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:8px;
+}
+.table th,.table td{
+  border:1px solid #e5e7eb;
+  padding:4px 6px;
+  font-size:13px;
+}
+.table th{background:#f3f4f6;text-align:left}
+
+.badge{
+  display:inline-block;
+  padding:2px 6px;
+  border-radius:4px;
+  font-size:11px;
+  background:#e5e7eb;
+}
+
+/* prosty układ kolumn w magazynie/maszynach */
+.columns{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+}
+.col{
+  flex:1 1 260px;
+}
+
+/* pola wyboru w zabiegach */
+.checkbox-list{
+  max-height:160px;
+  overflow:auto;
+  border:1px solid #e5e7eb;
+  padding:6px;
+  border-radius:4px;
+}
+.checkbox-list label{
+  display:block;
+  font-size:13px;
+  margin-bottom:4px;
 }
 </style>
 </head>
 
 <body>
 <div class="container">
-  <h1>Gospodarstwo – Pola</h1>
+  <h1>Gospodarstwo – Panel</h1>
 
   <div class="tabs">
     <button class="active" onclick="showTab('fields')">Pola</button>
@@ -110,7 +149,7 @@ button.primary:hover{background:#1d4ed8}
   <!-- ======= POLA ======= -->
   <div id="fields" class="section active">
     <h2>Pola</h2>
-    <p>Na mapie narysuj granice pola (narzędzie wielokąta), a następnie uzupełnij nazwę i uprawę.</p>
+    <p>Narysuj granice pola na mapie satelitarnej, powierzchnia przeliczy się automatycznie.</p>
 
     <div id="map"></div>
 
@@ -144,27 +183,190 @@ button.primary:hover{background:#1d4ed8}
 
     <button class="primary" onclick="saveField()">Zapisz pole</button>
 
-    <div id="fieldsList">
+    <div id="fieldsList" style="margin-top:16px;border-top:1px solid #e5e7eb;padding-top:10px;">
       <h3>Twoje pola</h3>
       <div id="fieldsContainer" class="small">Ładowanie...</div>
     </div>
   </div>
 
-  <!-- ======= placeholdery pozostałych zakładek ======= -->
+  <!-- ======= ZABIEGI ======= -->
   <div id="treatments" class="section">
     <h2>Zabiegi</h2>
-    <p>Tu później dodamy formularz zabiegów powiązanych z polami.</p>
+
+    <div class="form-row">
+      <div>
+        <label>Data zabiegu<br>
+          <input id="treatDate" type="date">
+        </label>
+      </div>
+      <div>
+        <label>Typ zabiegu<br>
+          <select id="treatType">
+            <option value="oprysk">Oprysk</option>
+            <option value="nawozenie">Nawozenie</option>
+            <option value="inne">Inne</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="col">
+        <label>Pola objete zabiegiem</label>
+        <div id="treatFieldsList" class="checkbox-list small">
+          Ładowanie pól...
+        </div>
+      </div>
+
+      <div class="col">
+        <label>Środki z magazynu</label>
+        <table class="table small">
+          <thead>
+            <tr>
+              <th>Pozycja magazynu</th>
+              <th>Ilosc [jedn]</th>
+              <th>Dawka / ha</th>
+            </tr>
+          </thead>
+          <tbody id="treatItemsBody">
+            <tr>
+              <td>
+                <select class="treatItemSelect">
+                  <option value="">-- wybierz --</option>
+                </select>
+              </td>
+              <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+              <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div style="flex:1">
+        <label>Notatka<br>
+          <textarea id="treatNote" rows="2" style="width:100%;"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <button class="primary" onclick="saveTreatment()">Zapisz zabieg</button>
+
+    <h3 style="margin-top:16px;">Historia zabiegów</h3>
+    <div id="treatmentsList" class="small">Ładowanie...</div>
   </div>
 
+  <!-- ======= MAGAZYN ======= -->
   <div id="warehouse" class="section">
     <h2>Magazyn</h2>
-    <p>Tu później dodamy magazyn oprysków, nawozów i materiału siewnego.</p>
+    <div class="columns">
+      <div class="col">
+        <h3>Paliwo (Diesel)</h3>
+        <div class="form-row">
+          <label>Diesel [litry]<br>
+            <input id="fuelName" value="Diesel" readonly>
+          </label>
+          <label>Ilosc [l]<br>
+            <input id="fuelQty" type="number" step="0.01">
+          </label>
+        </div>
+        <button class="primary" onclick="saveFuel()">Zapisz stan paliwa</button>
+        <div id="fuelInfo" class="small" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="col">
+        <h3>Srodki ochrony roslin</h3>
+        <div class="form-row">
+          <label>Nazwa<br>
+            <input id="ppName">
+          </label>
+          <label>Ilosc [l/kg]<br>
+            <input id="ppQty" type="number" step="0.01">
+          </label>
+        </div>
+        <button class="primary" onclick="addPlantProtection()">Dodaj / zaktualizuj</button>
+        <table class="table small" id="ppTable">
+          <thead>
+            <tr><th>Nazwa</th><th>Ilosc</th><th>Akcja</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="col">
+        <h3>Nawozy</h3>
+        <div class="form-row">
+          <label>Nazwa<br>
+            <input id="fertName">
+          </label>
+          <label>Ilosc [kg]<br>
+            <input id="fertQty" type="number" step="0.01">
+          </label>
+        </div>
+        <button class="primary" onclick="addFertilizer()">Dodaj / zaktualizuj</button>
+        <table class="table small" id="fertTable">
+          <thead>
+            <tr><th>Nazwa</th><th>Ilosc</th><th>Akcja</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
+  <!-- ======= MASZYNY ======= -->
   <div id="machines" class="section">
     <h2>Maszyny</h2>
-    <p>Tu później dodamy maszyny, przeglądy i naprawy.</p>
+    <div class="columns">
+      <div class="col">
+        <h3>Dodaj / edytuj maszynę</h3>
+        <div class="form-row">
+          <label>Nazwa maszyny<br>
+            <input id="machineName">
+          </label>
+          <label>Przebieg (mth / km)<br>
+            <input id="machineOdo" type="number" step="0.1">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Informacje o filtrach, częściach itp.<br>
+            <textarea id="machineFilters" rows="3" style="width:100%;"></textarea>
+          </label>
+        </div>
+        <button class="primary" onclick="saveMachine()">Zapisz maszynę</button>
+      </div>
+
+      <div class="col">
+        <h3>Maszyny</h3>
+        <div id="machinesList" class="small">Ładowanie...</div>
+      </div>
+
+      <div class="col">
+        <h3>Serwis maszyny</h3>
+        <div class="form-row">
+          <label>Wybrana maszyna<br>
+            <select id="serviceMachineSelect"></select>
+          </label>
+          <label>Data serwisu<br>
+            <input id="serviceDate" type="date">
+          </label>
+          <label>Przebieg przy serwisie<br>
+            <input id="serviceOdo" type="number" step="0.1">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Uwagi<br>
+            <textarea id="serviceNote" rows="2" style="width:100%;"></textarea>
+          </label>
+        </div>
+        <button class="primary" onclick="saveService()">Zapisz serwis</button>
+        <div id="servicesList" class="small" style="margin-top:10px;">Wybierz maszynę, aby zobaczyć historię serwisów.</div>
+      </div>
+    </div>
   </div>
+
 </div>
 
 <!-- Leaflet JS -->
@@ -174,11 +376,11 @@ button.primary:hover{background:#1d4ed8}
 
 <script>
 // ====== KONFIGURACJA SUPABASE ======
-const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co"; // PODMIEN NA SWOJE
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";                      // PODMIEN NA SWOJE
+const SUPABASE_URL = "https://AVGRFEGHYCRSAWAOIIIL.supabase.co"; // PODMIEN
+const SUPABASE_KEY = "TWOJ_ANON_KEY_TUTAJ";                      // PODMIEN
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ====== PROSTE ZAKŁADKI ======
+// ====== ZAKŁADKI ======
 function showTab(id){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -186,18 +388,23 @@ function showTab(id){
   document.getElementById(id).classList.add('active');
 }
 
-// ====== MAPA + RYSOWANIE POLA ======
+// ====== MAPA POL SATELITARNA ======
 let map;
 let drawnItems;
 let currentPolygonGeoJSON = null;
+let fieldLayers = {}; // id -> layer
 
 function initMap(){
-  map = L.map('map').setView([51.9, 17.0], 7); // ogólny widok na PL
+  map = L.map('map').setView([51.9, 17.0], 7);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
+  // warstwa satelitarna Esri
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    }
+  ).addTo(map);
 
   drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
@@ -223,7 +430,7 @@ function initMap(){
   map.addControl(drawControl);
 
   map.on(L.Draw.Event.CREATED, function (event) {
-    drawnItems.clearLayers(); // tylko jedno pole na raz
+    drawnItems.clearLayers();
     const layer = event.layer;
     drawnItems.addLayer(layer);
     updateAreaFromLayer(layer);
@@ -243,9 +450,9 @@ function updateAreaFromLayer(layer){
   const geojson = layer.toGeoJSON();
   currentPolygonGeoJSON = geojson.geometry;
 
-  const latlngs = layer.getLatLngs()[0]; // pierwszy pierścień
+  const latlngs = layer.getLatLngs()[0];
   let area = L.GeometryUtil.geodesicArea(latlngs); // m2
-  const areaHa = area / 10000; // ha
+  const areaHa = area / 10000;
   document.getElementById('fieldArea').value = areaHa.toFixed(2);
 }
 
@@ -278,15 +485,18 @@ async function loadFields(){
 
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('id,name,area_ha,current_crop_id,crops(name)')
-    .order('id', { ascending: true })
-    .returns();
+    .select('id,name,area_ha,current_crop_id,crops(name),geometry')
+    .order('id', { ascending: true });
 
   if(error){
     console.log('Fields load error', error);
     container.textContent = 'Błąd ładowania pól';
     return;
   }
+
+  // wyczyść warstwy
+  Object.values(fieldLayers).forEach(l=>map.removeLayer(l));
+  fieldLayers = {};
 
   if(!data || data.length === 0){
     container.textContent = 'Brak zapisanych pól';
@@ -301,7 +511,28 @@ async function loadFields(){
     div.innerHTML = `<strong>${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}`;
     div.onclick = () => focusFieldOnMap(field.id);
     container.appendChild(div);
+
+    // warstwa na mapie z popupem
+    if(field.geometry){
+      const layer = L.geoJSON({
+        type:'Feature',
+        geometry: field.geometry,
+        properties:{}
+      }, {
+        style:{color:'#22c55e',weight:2,fillOpacity:0.25}
+      }).addTo(map);
+
+      layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
+      fieldLayers[field.id] = layer;
+    }
   });
+}
+
+async function focusFieldOnMap(fieldId){
+  const layer = fieldLayers[fieldId];
+  if(!layer) return;
+  map.fitBounds(layer.getBounds());
+  layer.openPopup();
 }
 
 // ====== ZAPIS POLA ======
@@ -346,34 +577,576 @@ async function saveField(){
   drawnItems.clearLayers();
   currentPolygonGeoJSON = null;
 
-  loadFields();
+  await loadFields();
+  await loadTreatmentFields(); // aktualizacja listy pól w zabiegach
 }
 
-// ====== PODGLĄD POLA NA MAPIE ======
-async function focusFieldOnMap(fieldId){
+// ====== ZABIEGI ======
+async function loadTreatmentFields(){
+  const list = document.getElementById('treatFieldsList');
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('geometry')
-    .eq('id', fieldId)
-    .single();
+    .select('id,name,area_ha')
+    .order('name', { ascending:true });
 
-  if(error || !data){
-    console.log('Focus field error', error);
+  if(error){
+    console.log('Load treat fields error', error);
+    list.textContent = 'Błąd ładowania pól';
+    return;
+  }
+  if(!data || data.length===0){
+    list.textContent = 'Brak pól – dodaj pola w zakładce Pola.';
     return;
   }
 
-  const geom = data.geometry;
-  drawnItems.clearLayers();
+  list.innerHTML = '';
+  data.forEach(field=>{
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" value="${field.id}" data-area="${field.area_ha}"> ${field.name} (${field.area_ha.toFixed(2)} ha)`;
+    list.appendChild(label);
+  });
+}
 
-  const layer = L.geoJSON({
-    type:'Feature',
-    geometry: geom,
-    properties:{}
-  }).getLayers()[0];
+async function loadWarehouseForTreatments(){
+  // pobierz wszystkie pozycje magazynu
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .order('name', { ascending:true });
 
-  drawnItems.addLayer(layer);
-  map.fitBounds(layer.getBounds());
-  updateAreaFromLayer(layer);
+  if(error){
+    console.log('Load warehouse for treatments error', error);
+    return;
+  }
+
+  const selects = document.querySelectorAll('.treatItemSelect');
+  selects.forEach(sel=>{
+    sel.innerHTML = '<option value="">-- wybierz --</option>';
+    (data || []).forEach(item=>{
+      const label = `${item.name} (${item.category}, ${item.qty} ${item.unit})`;
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      opt.textContent = label;
+      opt.dataset.unit = item.unit;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function addTreatmentItemRow(){
+  const tbody = document.getElementById('treatItemsBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <select class="treatItemSelect">
+        <option value="">-- wybierz --</option>
+      </select>
+    </td>
+    <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+    <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+  `;
+  tbody.appendChild(tr);
+  loadWarehouseForTreatments();
+}
+
+function computeDosesForTreatmentRows(totalArea){
+  const rows = document.querySelectorAll('#treatItemsBody tr');
+  rows.forEach(row=>{
+    const amountInput = row.querySelector('.treatItemAmount');
+    const doseInput = row.querySelector('.treatItemDose');
+    const amount = parseFloat(amountInput.value || '0');
+    if(totalArea>0 && amount>0){
+      const dose = amount / totalArea;
+      doseInput.value = dose.toFixed(2);
+    }else{
+      doseInput.value = '';
+    }
+  });
+}
+
+async function saveTreatment(){
+  const date = document.getElementById('treatDate').value;
+  const type = document.getElementById('treatType').value;
+  const note = document.getElementById('treatNote').value.trim();
+
+  if(!date){
+    alert('Podaj datę zabiegu');
+    return;
+  }
+
+  // pola
+  const fieldCheckboxes = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
+  if(fieldCheckboxes.length===0){
+    alert('Zaznacz co najmniej jedno pole');
+    return;
+  }
+
+  let totalArea = 0;
+  const fieldIds = [];
+  fieldCheckboxes.forEach(cb=>{
+    totalArea += parseFloat(cb.dataset.area || '0');
+    fieldIds.push(Number(cb.value));
+  });
+
+  // środki
+  const rows = document.querySelectorAll('#treatItemsBody tr');
+  const items = [];
+  for(const row of rows){
+    const sel = row.querySelector('.treatItemSelect');
+    const amountInput = row.querySelector('.treatItemAmount');
+    const doseInput = row.querySelector('.treatItemDose');
+    const whId = sel.value;
+    const amount = parseFloat(amountInput.value || '0');
+    if(!whId || isNaN(amount) || amount<=0) continue;
+    const dose = totalArea>0 ? amount/totalArea : null;
+    doseInput.value = dose ? dose.toFixed(2) : '';
+    items.push({
+      warehouse_item_id:Number(whId),
+      amount_used:amount,
+      dose_per_ha:dose
+    });
+  }
+
+  if(items.length===0){
+    if(!confirm('Nie wybrano żadnych środków z magazynu. Zapisać zabieg bez magazynu?')) return;
+  }
+
+  // 1) wstaw zabieg
+  const { data: inserted, error } = await supabaseClient
+    .from('treatments')
+    .insert([{ date, type, note }])
+    .select('id')
+    .single();
+
+  if(error){
+    console.log('Insert treatment error', error);
+    alert('Błąd zapisu zabiegu');
+    return;
+  }
+
+  const treatmentId = inserted.id;
+
+  // 2) powiązania z polami
+  const tfRows = fieldIds.map(fid=>({ treatment_id:treatmentId, field_id:fid }));
+  const { error: tfErr } = await supabaseClient
+    .from('treatment_fields')
+    .insert(tfRows);
+  if(tfErr){
+    console.log('Insert treatment_fields error', tfErr);
+  }
+
+  // 3) zużyte środki + aktualizacja magazynu
+  if(items.length>0){
+    const tiRows = items.map(i=>({ ...i, treatment_id:treatmentId }));
+    const { error: tiErr } = await supabaseClient
+      .from('treatment_items')
+      .insert(tiRows);
+    if(tiErr){
+      console.log('Insert treatment_items error', tiErr);
+    }
+
+    // zdejmij stany z magazynu
+    for(const it of items){
+      await supabaseClient.rpc('noop'); // placeholder gdybyś miał edge funkcje; na razie zrobimy prosto:
+    }
+
+    // prosta aktualizacja: pobierz item, odejmij ilość
+    for(const it of items){
+      const { data: wh, error: wErr } = await supabaseClient
+        .from('warehouse_items')
+        .select('qty')
+        .eq('id', it.warehouse_item_id)
+        .single();
+      if(wErr || !wh) continue;
+      const newQty = Number(wh.qty) - Number(it.amount_used);
+      await supabaseClient
+        .from('warehouse_items')
+        .update({ qty:newQty })
+        .eq('id', it.warehouse_item_id);
+    }
+  }
+
+  alert('Zabieg zapisany');
+  document.getElementById('treatNote').value = '';
+  document.getElementById('treatDate').value = '';
+  document.querySelectorAll('#treatFieldsList input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  document.getElementById('treatItemsBody').innerHTML = `
+    <tr>
+      <td>
+        <select class="treatItemSelect">
+          <option value="">-- wybierz --</option>
+        </select>
+      </td>
+      <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+      <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+    </tr>
+  `;
+  await loadWarehouseForTreatments();
+  await loadWarehouseTables();
+  await loadTreatmentsList();
+}
+
+async function loadTreatmentsList(){
+  const box = document.getElementById('treatmentsList');
+  const { data, error } = await supabaseClient
+    .from('treatments')
+    .select('id,date,type,note,treatment_fields(field_id,fields(name)),treatment_items(amount_used,dose_per_ha,warehouse_items(name,unit))')
+    .order('date',{ascending:false});
+
+  if(error){
+    console.log('Load treatments error', error);
+    box.textContent = 'Błąd ładowania zabiegów';
+    return;
+  }
+  if(!data || data.length===0){
+    box.textContent = 'Brak zapisanych zabiegów';
+    return;
+  }
+
+  box.innerHTML = '';
+  data.forEach(t=>{
+    const div = document.createElement('div');
+    div.style.borderBottom = '1px solid #e5e7eb';
+    div.style.padding = '4px 0';
+    const fieldsNames = (t.treatment_fields || []).map(tf=>tf.fields?.name).filter(Boolean).join(', ') || '—';
+    const itemsText = (t.treatment_items || []).map(it=>{
+      const nm = it.warehouse_items?.name || '—';
+      const unit = it.warehouse_items?.unit || '';
+      const amt = it.amount_used;
+      const dose = it.dose_per_ha;
+      return `${nm}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
+    }).join('; ');
+    div.innerHTML = `
+      <div><strong>${t.date}</strong> – ${t.type}</div>
+      <div>Pola: ${fieldsNames}</div>
+      <div>Środki: ${itemsText || '—'}</div>
+      <div class="small">Notatka: ${t.note || '—'}</div>
+    `;
+    box.appendChild(div);
+  });
+}
+
+// przeliczanie dawek po każdej zmianie ilości
+document.addEventListener('input', e=>{
+  if(e.target.classList.contains('treatItemAmount')){
+    const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
+    let totalArea = 0;
+    checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
+    computeDosesForTreatmentRows(totalArea);
+  }
+});
+document.getElementById('treatFieldsList').addEventListener('change', e=>{
+  if(e.target.type === 'checkbox'){
+    const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
+    let totalArea = 0;
+    checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
+    computeDosesForTreatmentRows(totalArea);
+  }
+});
+
+// ====== MAGAZYN ======
+async function ensureFuelRow(){
+  // Diesel jako kategoria fuel, unit 'l'
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','fuel')
+    .eq('name','Diesel')
+    .maybeSingle();
+
+  if(error){
+    console.log('Fuel fetch error', error);
+    return;
+  }
+
+  if(!data){
+    const { error: insErr } = await supabaseClient
+      .from('warehouse_items')
+      .insert([{category:'fuel',name:'Diesel',unit:'l',qty:0}]);
+    if(insErr) console.log('Fuel insert error', insErr);
+  }
+}
+
+async function saveFuel(){
+  const qty = parseFloat(document.getElementById('fuelQty').value || '0');
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','fuel')
+    .eq('name','Diesel')
+    .single();
+  if(error){
+    console.log('Fuel select error', error);
+    alert('Błąd zapisu paliwa');
+    return;
+  }
+  const { error: updErr } = await supabaseClient
+    .from('warehouse_items')
+    .update({ qty })
+    .eq('id', data.id);
+  if(updErr){
+    console.log('Fuel update error', updErr);
+    alert('Błąd zapisu paliwa');
+    return;
+  }
+  alert('Stan paliwa zapisany');
+  await loadWarehouseTables();
+}
+
+async function addPlantProtection(){
+  const name = document.getElementById('ppName').value.trim();
+  const qty = parseFloat(document.getElementById('ppQty').value || '0');
+  if(!name){alert('Podaj nazwę środka');return;}
+  if(isNaN(qty)){alert('Podaj ilość');return;}
+
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','plant_protection')
+    .eq('name',name)
+    .maybeSingle();
+
+  if(error){console.log('PP select error', error);return;}
+
+  if(data){
+    const newQty = qty;
+    const { error: updErr } = await supabaseClient
+      .from('warehouse_items')
+      .update({ qty:newQty })
+      .eq('id', data.id);
+    if(updErr) console.log('PP update error', updErr);
+  }else{
+    const { error: insErr } = await supabaseClient
+      .from('warehouse_items')
+      .insert([{category:'plant_protection',name,unit:'l',qty}]);
+    if(insErr) console.log('PP insert error', insErr);
+  }
+
+  document.getElementById('ppName').value='';
+  document.getElementById('ppQty').value='';
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+}
+
+async function addFertilizer(){
+  const name = document.getElementById('fertName').value.trim();
+  const qty = parseFloat(document.getElementById('fertQty').value || '0');
+  if(!name){alert('Podaj nazwę nawozu');return;}
+  if(isNaN(qty)){alert('Podaj ilość');return;}
+
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','fertilizer')
+    .eq('name',name)
+    .maybeSingle();
+
+  if(error){console.log('Fert select error', error);return;}
+
+  if(data){
+    const newQty = qty;
+    const { error: updErr } = await supabaseClient
+      .from('warehouse_items')
+      .update({ qty:newQty })
+      .eq('id', data.id);
+    if(updErr) console.log('Fert update error', updErr);
+  }else{
+    const { error: insErr } = await supabaseClient
+      .from('warehouse_items')
+      .insert([{category:'fertilizer',name,unit:'kg',qty}]);
+    if(insErr) console.log('Fert insert error', insErr);
+  }
+
+  document.getElementById('fertName').value='';
+  document.getElementById('fertQty').value='';
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+}
+
+async function loadWarehouseTables(){
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .order('name',{ascending:true});
+
+  if(error){
+    console.log('Warehouse load error', error);
+    return;
+  }
+
+  const fuelInfo = document.getElementById('fuelInfo');
+  const ppBody = document.querySelector('#ppTable tbody');
+  const fertBody = document.querySelector('#fertTable tbody');
+
+  fuelInfo.textContent='';
+  ppBody.innerHTML='';
+  fertBody.innerHTML='';
+
+  (data || []).forEach(item=>{
+    if(item.category==='fuel' && item.name==='Diesel'){
+      fuelInfo.textContent = `Aktualny stan: ${item.qty} ${item.unit}`;
+      document.getElementById('fuelQty').value = item.qty;
+    }
+    if(item.category==='plant_protection'){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
+                   onchange="updateWarehouseQty(${item.id}, this.value)"></td>
+        <td><span class="badge">${item.unit}</span></td>
+      `;
+      ppBody.appendChild(tr);
+    }
+    if(item.category==='fertilizer'){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
+                   onchange="updateWarehouseQty(${item.id}, this.value)"></td>
+        <td><span class="badge">${item.unit}</span></td>
+      `;
+      fertBody.appendChild(tr);
+    }
+  });
+}
+
+async function updateWarehouseQty(id, value){
+  const qty = parseFloat(value || '0');
+  const { error } = await supabaseClient
+    .from('warehouse_items')
+    .update({ qty })
+    .eq('id', id);
+  if(error){
+    console.log('Warehouse qty update error', error);
+    alert('Błąd aktualizacji ilości');
+  }
+}
+
+// ====== MASZYNY ======
+async function loadMachines(){
+  const { data, error } = await supabaseClient
+    .from('machines')
+    .select('*')
+    .order('name',{ascending:true});
+
+  if(error){
+    console.log('Machines load error', error);
+    document.getElementById('machinesList').textContent='Błąd ładowania maszyn';
+    return;
+  }
+
+  const list = document.getElementById('machinesList');
+  const select = document.getElementById('serviceMachineSelect');
+  list.innerHTML='';
+  select.innerHTML='<option value="">-- wybierz maszynę --</option>';
+
+  if(!data || data.length===0){
+    list.textContent='Brak maszyn';
+    return;
+  }
+
+  data.forEach(m=>{
+    const div = document.createElement('div');
+    div.style.borderBottom='1px solid #e5e7eb';
+    div.style.padding='4px 0';
+    div.innerHTML = `
+      <strong>${m.name}</strong><br>
+      Przebieg: ${m.odometer ?? '—'}<br>
+      <span class="small">Filtry/części: ${m.filter_info || '—'}</span>
+    `;
+    list.appendChild(div);
+
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.name;
+    select.appendChild(opt);
+  });
+}
+
+async function saveMachine(){
+  const name = document.getElementById('machineName').value.trim();
+  const odo = parseFloat(document.getElementById('machineOdo').value || '0');
+  const filters = document.getElementById('machineFilters').value.trim();
+  if(!name){alert('Podaj nazwę maszyny');return;}
+
+  const { error } = await supabaseClient
+    .from('machines')
+    .insert([{ name, odometer:odo, filter_info:filters }]);
+
+  if(error){
+    console.log('Insert machine error', error);
+    alert('Błąd zapisu maszyny');
+    return;
+  }
+
+  alert('Maszyna zapisana');
+  document.getElementById('machineName').value='';
+  document.getElementById('machineOdo').value='';
+  document.getElementById('machineFilters').value='';
+  await loadMachines();
+}
+
+document.getElementById('serviceMachineSelect').addEventListener('change', ()=>{
+  const id = document.getElementById('serviceMachineSelect').value;
+  if(id) loadServicesForMachine(Number(id));
+});
+
+async function saveService(){
+  const machineId = document.getElementById('serviceMachineSelect').value;
+  const date = document.getElementById('serviceDate').value;
+  const odo = parseFloat(document.getElementById('serviceOdo').value || '0');
+  const note = document.getElementById('serviceNote').value.trim();
+
+  if(!machineId){alert('Wybierz maszynę');return;}
+  if(!date){alert('Podaj datę serwisu');return;}
+
+  const { error } = await supabaseClient
+    .from('machine_services')
+    .insert([{ machine_id:Number(machineId), service_date:date, odometer_at_service:odo, note }]);
+
+  if(error){
+    console.log('Insert service error', error);
+    alert('Błąd zapisu serwisu');
+    return;
+  }
+
+  alert('Serwis zapisany');
+  document.getElementById('serviceDate').value='';
+  document.getElementById('serviceOdo').value='';
+  document.getElementById('serviceNote').value='';
+  await loadServicesForMachine(Number(machineId));
+}
+
+async function loadServicesForMachine(machineId){
+  const { data, error } = await supabaseClient
+    .from('machine_services')
+    .select('*')
+    .eq('machine_id', machineId)
+    .order('service_date',{ascending:false});
+
+  const box = document.getElementById('servicesList');
+
+  if(error){
+    console.log('Services load error', error);
+    box.textContent='Błąd ładowania serwisów';
+    return;
+  }
+  if(!data || data.length===0){
+    box.textContent='Brak serwisów dla tej maszyny';
+    return;
+  }
+
+  box.innerHTML='';
+  data.forEach(s=>{
+    const div = document.createElement('div');
+    div.style.borderBottom='1px solid #e5e7eb';
+    div.style.padding='4px 0';
+    div.innerHTML = `
+      <strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '—'}<br>
+      <span class="small">Uwagi: ${s.note || '—'}</span>
+    `;
+    box.appendChild(div);
+  });
 }
 
 // ====== START ======
@@ -381,6 +1154,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMap();
   await loadCrops();
   await loadFields();
+  await loadTreatmentFields();
+  await ensureFuelRow();
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+  await loadTreatmentsList();
+  await loadMachines();
 });
 </script>
 </body>
