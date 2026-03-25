@@ -1343,14 +1343,36 @@ async function editTreatment(id){
 
 async function deleteTreatment(id){
   if(!confirm('Na pewno usunąć ten zabieg?')) return;
+
+  // najpierw kasujemy powiązane rekordy
+  const { error: tfErr } = await supabaseClient
+    .from('treatment_fields')
+    .delete()
+    .eq('treatment_id', id);
+  if(tfErr){
+    console.log('Error deleting treatment_fields', tfErr);
+  }
+
+  const { error: tiErr } = await supabaseClient
+    .from('treatment_items')
+    .delete()
+    .eq('treatment_id', id);
+  if(tiErr){
+    console.log('Error deleting treatment_items', tiErr);
+  }
+
+  // na końcu sam zabieg
   const { error } = await supabaseClient
     .from('treatments')
     .delete()
     .eq('id', id);
+
   if(error){
     alert('Błąd usuwania zabiegu');
+    console.log('Delete treatment error', error);
     return;
   }
+
   alert('Zabieg usunięty');
   await loadTreatmentsList();
 }
