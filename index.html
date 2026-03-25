@@ -682,59 +682,61 @@ async function loadFields(){
 
   container.innerHTML = '';
   data.forEach(field => {
-  const div = document.createElement('div');
-  div.className = 'field-item';
-  const cropName = field['crops']?.name || '—';
-  const color = getCropColor(cropName);
+    const div = document.createElement('div');
+    div.className = 'field-item';
+    const cropName = field['crops']?.name || '—';
+    const color = getCropColor(cropName);
 
-  // tu TRZYMAJ id z bazy w data-id
-  div.dataset.fieldId = field.id;
+    div.dataset.fieldId = field.id;
 
-  div.innerHTML = `
-    <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
-    <div class="field-actions">
-      <button class="btn-edit">Edytuj</button>
-      <button class="btn-delete">Usuń</button>
-    </div>
-  `;
+    div.innerHTML = `
+      <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
+      <div class="field-actions">
+        <button class="btn-edit">Edytuj</button>
+        <button class="btn-delete">Usuń</button>
+      </div>
+    `;
 
-  // klik w wiersz – fokus na mapie
-  div.addEventListener('click', () => focusFieldOnMap(field.id));
+    div.addEventListener('click', () => focusFieldOnMap(field.id));
 
-  // osobne handlery na przyciski, żeby mieć pewność jakie id idzie
-  const btnEdit = div.querySelector('.btn-edit');
-  const btnDelete = div.querySelector('.btn-delete');
+    const btnEdit = div.querySelector('.btn-edit');
+    const btnDelete = div.querySelector('.btn-delete');
 
-  btnEdit.addEventListener('click', e => {
-    e.stopPropagation();
-    const fid = Number(div.dataset.fieldId);
-    console.log('EDIT field id =', fid);
-    startEditField(fid);
+    btnEdit.addEventListener('click', e => {
+      e.stopPropagation();
+      const fid = Number(div.dataset.fieldId);
+      startEditField(fid);
+    });
+
+    btnDelete.addEventListener('click', e => {
+      e.stopPropagation();
+      const fid = Number(div.dataset.fieldId);
+      deleteField(fid);
+    });
+
+    container.appendChild(div);
+
+    if(field.geometry){
+      const layer = L.geoJSON({
+        type:'Feature',
+        geometry: field.geometry,
+        properties:{}
+      }, {
+        style:{color:color,weight:2,fillOpacity:0.35}
+      }).addTo(map);
+
+      layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
+      fieldLayers[field.id] = layer;
+      bounds.extend(layer.getBounds());
+    }
   });
 
-  btnDelete.addEventListener('click', e => {
-    e.stopPropagation();
-    const fid = Number(div.dataset.fieldId);
-    console.log('DELETE field id =', fid);
-    deleteField(fid);
-  });
-
-  container.appendChild(div);
-
-  if(field.geometry){
-    const layer = L.geoJSON({
-      type:'Feature',
-      geometry: field.geometry,
-      properties:{}
-    }, {
-      style:{color:color,weight:2,fillOpacity:0.35}
-    }).addTo(map);
-
-    layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
-    fieldLayers[field.id] = layer;
-    bounds.extend(layer.getBounds());
+  if(bounds.isValid()){
+    map.fitBounds(bounds.pad(0.2));
+  }else{
+    map.setView([KURZNIE_LAT, KURZNIE_LON], 13);
   }
-});
+}
 
 async function focusFieldOnMap(fieldId){
   const layer = fieldLayers[fieldId];
@@ -777,9 +779,12 @@ async function startEditField(fieldId){
 
 async function deleteField(fieldId){
   const id = Number(fieldId);
-  console.log('deleteField called with id =', id);
-
   if(!confirm('Na pewno usunąć to pole?')) return;
+
+  await supabaseClient
+    .from('field_seasons')
+    .delete()
+    .eq('field_id', id);
 
   const { data: delFieldData, error: delFieldError } = await supabaseClient
     .from('fields')
@@ -787,11 +792,12 @@ async function deleteField(fieldId){
     .eq('id', id)
     .select();
 
-  console.log('DEL fields result:', delFieldData, delFieldError);
-
   if(delFieldError){
     alert('Błąd usuwania pola: ' + delFieldError.message);
     return;
+  }
+  if(!delFieldData || delFieldData.length === 0){
+    alert('Supabase nie usunął żadnego pola (sprawdź id w bazie).');
   }
 
   if(fieldLayers[id]){
@@ -854,7 +860,6 @@ async function saveField(){
 
   if(seasonYear && cropId){
     const cropName = document.querySelector(`#fieldCrop option[value="${cropId}"]`)?.textContent || '';
-    // usuwamy poprzedni wpis sezonu dla tego pola i roku, żeby nie dublować
     await supabaseClient
       .from('field_seasons')
       .delete()
@@ -1679,7 +1684,6 @@ async function loadSeasonSummary(){
     return;
   }
 
-  // agregacja: crop_name -> { area, fields[] }
   const totals = {};
   data.forEach(r=>{
     const name = r.crop_name;
