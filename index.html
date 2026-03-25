@@ -235,7 +235,7 @@ button.primary:hover{background:#1d4ed8}
         <label>Typ zabiegu<br>
           <select id="treatType">
             <option value="oprysk">Oprysk</option>
-            <option value="nawozenie">Nawozenie</option>
+            <option value="nawozenie">Nawożenie</option>
             <option value="inne">Inne</option>
           </select>
         </label>
@@ -249,7 +249,7 @@ button.primary:hover{background:#1d4ed8}
 
     <div class="form-row">
       <div class="col">
-        <label>Pola objete zabiegiem</label>
+        <label>Pola objęte zabiegiem</label>
         <div id="treatFieldsList" class="checkbox-list small">
           Ładowanie pól...
         </div>
@@ -261,7 +261,7 @@ button.primary:hover{background:#1d4ed8}
           <thead>
             <tr>
               <th>Pozycja magazynu</th>
-              <th>Ilosc [jedn]</th>
+              <th>Ilość [jedn]</th>
               <th>Dawka / ha</th>
             </tr>
           </thead>
@@ -305,7 +305,7 @@ button.primary:hover{background:#1d4ed8}
           <label>Diesel [litry]<br>
             <input id="fuelName" value="Diesel" readonly>
           </label>
-          <label>Ilosc [l]<br>
+          <label>Ilość [l]<br>
             <input id="fuelQty" type="number" step="0.01">
           </label>
         </div>
@@ -314,19 +314,19 @@ button.primary:hover{background:#1d4ed8}
       </div>
 
       <div class="col">
-        <h3>Srodki ochrony roslin</h3>
+        <h3>Środki ochrony roślin</h3>
         <div class="form-row">
           <label>Nazwa<br>
             <input id="ppName">
           </label>
-          <label>Ilosc [l/kg]<br>
+          <label>Ilość [l/kg]<br>
             <input id="ppQty" type="number" step="0.01">
           </label>
         </div>
         <button class="primary" onclick="addPlantProtection()">Dodaj / zaktualizuj</button>
         <table class="table small" id="ppTable">
           <thead>
-            <tr><th>Nazwa</th><th>Ilosc</th><th>Akcja</th></tr>
+            <tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -338,14 +338,14 @@ button.primary:hover{background:#1d4ed8}
           <label>Nazwa<br>
             <input id="fertName">
           </label>
-          <label>Ilosc [kg]<br>
+          <label>Ilość [kg]<br>
             <input id="fertQty" type="number" step="0.01">
           </label>
         </div>
         <button class="primary" onclick="addFertilizer()">Dodaj / zaktualizuj</button>
         <table class="table small" id="fertTable">
           <thead>
-            <tr><th>Nazwa</th><th>Ilosc</th><th>Akcja</th></tr>
+            <tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -839,10 +839,7 @@ async function saveField(){
   await loadSeasonSummary();
 }
 
-/* --- dalej wklej dokładnie tę samą logikę, którą już miałeś dla:
-   loadTreatmentFields, magazynu, maszyn, serwisów i loadSeasonSummary
-   (one działały poprawnie – kasowanie pól już jest naprawione).
-*/
+/* ZABIEGI */
 
 async function loadTreatmentFields(){
   const list = document.getElementById('treatFieldsList');
@@ -869,18 +866,844 @@ async function loadTreatmentFields(){
   });
 }
 
-/* tu możesz wkleić swoją wcześniejszą, działającą część:
-   loadWarehouseForTreatments, saveTreatment, loadTreatmentsList,
-   magazyn, maszyny, serwisy, loadSeasonSummary
-   – kod zmian we front-endzie dla usuwania pól już jest kompletny.
-*/
+async function loadWarehouseForTreatments(){
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .neq('category','fuel')
+    .order('name', { ascending:true });
+
+  if(error){
+    console.log('Load warehouse for treatments error', error);
+    return;
+  }
+
+  const selects = document.querySelectorAll('.treatItemSelect');
+  selects.forEach(sel=>{
+    sel.innerHTML = '<option value="">-- wybierz --</option>';
+    (data || []).forEach(item=>{
+      const label = `${item.name} (${item.category}, ${item.qty} ${item.unit})`;
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      opt.textContent = label;
+      opt.dataset.unit = item.unit;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function addTreatmentItemRow(){
+  const tbody = document.getElementById('treatItemsBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <select class="treatItemSelect">
+        <option value="">-- wybierz --</option>
+      </select>
+    </td>
+    <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+    <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+  `;
+  tbody.appendChild(tr);
+  loadWarehouseForTreatments();
+}
+
+function computeDosesForTreatmentRows(totalArea){
+  const rows = document.querySelectorAll('#treatItemsBody tr');
+  rows.forEach(row=>{
+    const amountInput = row.querySelector('.treatItemAmount');
+    const doseInput = row.querySelector('.treatItemDose');
+    const amount = parseFloat(amountInput.value || '0');
+    if(totalArea>0 && amount>0){
+      const dose = amount / totalArea;
+      doseInput.value = dose.toFixed(2);
+    }else{
+      doseInput.value = '';
+    }
+  });
+}
+
+async function fetchDayTemperatureForKurznie(dateStr){
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${KURZNIE_LAT}&longitude=${KURZNIE_LON}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FWarsaw&start_date=${dateStr}&end_date=${dateStr}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data && data.daily && data.daily.temperature_2m_max && data.daily.temperature_2m_min){
+      const max = data.daily.temperature_2m_max[0];
+      const min = data.daily.temperature_2m_min[0];
+      return ((max + min) / 2).toFixed(1);
+    }
+  }catch(e){
+    console.log('Weather fetch error', e);
+  }
+  return null;
+}
+
+async function saveTreatment(){
+  const date = document.getElementById('treatDate').value;
+  const type = document.getElementById('treatType').value;
+  let temp = document.getElementById('treatTemp').value;
+  const note = document.getElementById('treatNote').value.trim();
+
+  if(!date){
+    alert('Podaj datę zabiegu');
+    return;
+  }
+
+  const fieldCheckboxes = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
+  if(fieldCheckboxes.length===0){
+    alert('Zaznacz co najmniej jedno pole');
+    return;
+  }
+
+  let totalArea = 0;
+  const fieldIds = [];
+  fieldCheckboxes.forEach(cb=>{
+    totalArea += parseFloat(cb.dataset.area || '0');
+    fieldIds.push(Number(cb.value));
+  });
+
+  const rows = document.querySelectorAll('#treatItemsBody tr');
+  const items = [];
+  for(const row of rows){
+    const sel = row.querySelector('.treatItemSelect');
+    const amountInput = row.querySelector('.treatItemAmount');
+    const doseInput = row.querySelector('.treatItemDose');
+    const whId = sel.value;
+    const amount = parseFloat(amountInput.value || '0');
+    if(!whId || isNaN(amount) || amount<=0) continue;
+    const dose = totalArea>0 ? amount/totalArea : null;
+    doseInput.value = dose ? dose.toFixed(2) : '';
+    items.push({
+      warehouse_item_id:Number(whId),
+      amount_used:amount,
+      dose_per_ha:dose
+    });
+  }
+
+  if(items.length===0){
+    if(!confirm('Nie wybrano żadnych środków z magazynu. Zapisać zabieg bez magazynu?')) return;
+  }
+
+  if(!temp){
+    temp = await fetchDayTemperatureForKurznie(date);
+  }
+  const fullNote = `Temp Kurznie ok.: ${temp !== null ? temp + ' °C' : 'brak'}; ${note}`;
+
+  let treatmentId;
+  if(editingTreatmentId){
+    const { data, error } = await supabaseClient
+      .from('treatments')
+      .update({ date, type, note: fullNote, temperature_c: temp })
+      .eq('id', editingTreatmentId)
+      .select('id')
+      .single();
+    if(error){
+      console.log('Update treatment error', error);
+      alert('Błąd zapisu zabiegu');
+      return;
+    }
+    treatmentId = data.id;
+    await supabaseClient.from('treatment_fields').delete().eq('treatment_id', treatmentId);
+    await supabaseClient.from('treatment_items').delete().eq('treatment_id', treatmentId);
+  }else{
+    const { data: inserted, error } = await supabaseClient
+      .from('treatments')
+      .insert([{ date, type, note: fullNote, temperature_c: temp }])
+      .select('id')
+      .single();
+    if(error){
+      console.log('Insert treatment error', error);
+      alert('Błąd zapisu zabiegu');
+      return;
+    }
+    treatmentId = inserted.id;
+  }
+
+  const tfRows = fieldIds.map(fid=>({ treatment_id:treatmentId, field_id:fid }));
+  const { error: tfErr } = await supabaseClient
+    .from('treatment_fields')
+    .insert(tfRows);
+  if(tfErr) console.log('Insert treatment_fields error', tfErr);
+
+  if(items.length>0){
+    const tiRows = items.map(i=>({ ...i, treatment_id:treatmentId }));
+    const { error: tiErr } = await supabaseClient
+      .from('treatment_items')
+      .insert(tiRows);
+    if(tiErr) console.log('Insert treatment_items error', tiErr);
+
+    if(!editingTreatmentId){
+      for(const it of items){
+        const { data: wh, error: wErr } = await supabaseClient
+          .from('warehouse_items')
+          .select('qty')
+          .eq('id', it.warehouse_item_id)
+          .single();
+        if(wErr || !wh) continue;
+        const newQty = Number(wh.qty) - Number(it.amount_used);
+        await supabaseClient
+          .from('warehouse_items')
+          .update({ qty:newQty })
+          .eq('id', it.warehouse_item_id);
+      }
+    }
+  }
+
+  alert(editingTreatmentId ? 'Zabieg zaktualizowany' : 'Zabieg zapisany');
+  editingTreatmentId = null;
+  document.getElementById('treatNote').value = '';
+  document.getElementById('treatDate').value = '';
+  document.getElementById('treatTemp').value = '';
+  document.querySelectorAll('#treatFieldsList input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  document.getElementById('treatItemsBody').innerHTML = `
+    <tr>
+      <td>
+        <select class="treatItemSelect">
+          <option value="">-- wybierz --</option>
+        </select>
+      </td>
+      <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+      <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+    </tr>
+  `;
+  await loadWarehouseForTreatments();
+  await loadWarehouseTables();
+  await loadTreatmentsList();
+}
+
+async function loadTreatmentsList(){
+  const box = document.getElementById('treatmentsList');
+  const { data, error } = await supabaseClient
+    .from('treatments')
+    .select('id,date,type,note,temperature_c,treatment_fields(field_id,fields(name)),treatment_items(amount_used,dose_per_ha,warehouse_items(name,unit))')
+    .order('date',{ascending:false});
+
+  if(error){
+    console.log('Load treatments error', error);
+    box.textContent = 'Błąd ładowania zabiegów';
+    return;
+  }
+  if(!data || data.length===0){
+    box.textContent = 'Brak zapisanych zabiegów';
+    return;
+  }
+
+  box.innerHTML = '';
+  data.forEach(t=>{
+    const div = document.createElement('div');
+    div.style.borderBottom = '1px solid #e5e7eb';
+    div.style.padding = '4px 0';
+    const fieldsNames = (t.treatment_fields || []).map(tf=>tf.fields?.name).filter(Boolean).join(', ') || '—';
+    const itemsText = (t.treatment_items || []).map(it=>{
+      const nm = it.warehouse_items?.name || '—';
+      const unit = it.warehouse_items?.unit || '';
+      const amt = it.amount_used;
+      const dose = it.dose_per_ha;
+      return `${nm}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
+    }).join('; ');
+    div.innerHTML = `
+      <div><strong>${t.date}</strong> – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
+      <div>Pola: ${fieldsNames}</div>
+      <div>Środki: ${itemsText || '—'}</div>
+      <div class="small">Notatka: ${t.note || '—'}</div>
+      <button onclick="editTreatment(${t.id})">Edytuj</button>
+      <button onclick="deleteTreatment(${t.id})">Usuń</button>
+    `;
+    box.appendChild(div);
+  });
+}
+
+async function editTreatment(id){
+  const { data, error } = await supabaseClient
+    .from('treatments')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if(error || !data){
+    alert('Błąd odczytu zabiegu');
+    return;
+  }
+  editingTreatmentId = id;
+  document.getElementById('treatDate').value = data.date;
+  document.getElementById('treatType').value = data.type;
+  document.getElementById('treatTemp').value = data.temperature_c || '';
+
+  document.querySelectorAll('#treatFieldsList input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  const { data: tf, error: tfErr } = await supabaseClient
+    .from('treatment_fields')
+    .select('field_id')
+    .eq('treatment_id', id);
+  if(!tfErr && tf){
+    tf.forEach(row=>{
+      const cb = document.querySelector(`#treatFieldsList input[value="${row.field_id}"]`);
+      if(cb) cb.checked = true;
+    });
+  }
+
+  const { data: items, error: itErr } = await supabaseClient
+    .from('treatment_items')
+    .select('warehouse_item_id,amount_used')
+    .eq('treatment_id', id);
+  const tbody = document.getElementById('treatItemsBody');
+  tbody.innerHTML = '';
+  if(!itErr && items && items.length){
+    items.forEach(it=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <select class="treatItemSelect">
+            <option value="">-- wybierz --</option>
+          </select>
+        </td>
+        <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px" value="${it.amount_used}"></td>
+        <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }else{
+    tbody.innerHTML = `
+      <tr>
+        <td>
+          <select class="treatItemSelect">
+            <option value="">-- wybierz --</option>
+          </select>
+        </td>
+        <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+        <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+      </tr>
+    `;
+  }
+  await loadWarehouseForTreatments();
+  if(!itErr && items && items.length){
+    const selects = document.querySelectorAll('.treatItemSelect');
+    items.forEach((it, idx)=>{
+      const sel = selects[idx];
+      if(sel){ sel.value = it.warehouse_item_id; }
+    });
+  }
+  alert('Tryb edycji zabiegu – zmień dane i kliknij „Zapisz zabieg”.');
+}
+
+async function deleteTreatment(id){
+  if(!confirm('Na pewno usunąć ten zabieg?')) return;
+  const { error } = await supabaseClient
+    .from('treatments')
+    .delete()
+    .eq('id', id);
+  if(error){
+    alert('Błąd usuwania zabiegu');
+    return;
+  }
+  alert('Zabieg usunięty');
+  await loadTreatmentsList();
+}
+
+document.addEventListener('input', e=>{
+  if(e.target.classList.contains('treatItemAmount')){
+    const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
+    let totalArea = 0;
+    checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
+    computeDosesForTreatmentRows(totalArea);
+  }
+});
+const treatFieldsListEl = document.getElementById('treatFieldsList');
+if (treatFieldsListEl) {
+  treatFieldsListEl.addEventListener('change', e=>{
+    if(e.target.type === 'checkbox'){
+      const checked = document.querySelectorAll('#treatFieldsList input[type="checkbox"]:checked');
+      let totalArea = 0;
+      checked.forEach(cb=> totalArea += parseFloat(cb.dataset.area || '0'));
+      computeDosesForTreatmentRows(totalArea);
+    }
+  });
+}
+
+/* MAGAZYN */
+
+async function ensureFuelRow(){
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','fuel')
+    .eq('name','Diesel')
+    .maybeSingle();
+
+  if(error){
+    console.log('Fuel fetch error', error);
+    return;
+  }
+
+  if(!data){
+    const { error: insErr } = await supabaseClient
+      .from('warehouse_items')
+      .insert([{category:'fuel',name:'Diesel',unit:'l',qty:0}]);
+    if(insErr) console.log('Fuel insert error', insErr);
+  }
+}
+
+async function saveFuel(){
+  const qty = parseFloat(document.getElementById('fuelQty').value || '0');
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','fuel')
+    .eq('name','Diesel')
+    .single();
+  if(error){
+    console.log('Fuel select error', error);
+    alert('Błąd zapisu paliwa');
+    return;
+  }
+  const { error: updErr } = await supabaseClient
+    .from('warehouse_items')
+    .update({ qty })
+    .eq('id', data.id);
+  if(updErr){
+    console.log('Fuel update error', updErr);
+    alert('Błąd zapisu paliwa');
+    return;
+  }
+  alert('Stan paliwa zapisany');
+  await loadWarehouseTables();
+}
+
+async function addPlantProtection(){
+  const name = document.getElementById('ppName').value.trim();
+  const qty = parseFloat(document.getElementById('ppQty').value || '0');
+  if(!name){alert('Podaj nazwę środka');return;}
+  if(isNaN(qty)){alert('Podaj ilość');return;}
+
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','plant_protection')
+    .eq('name',name)
+    .maybeSingle();
+
+  if(error){console.log('PP select error', error);return;}
+
+  if(data){
+    const newQty = qty;
+    const { error: updErr } = await supabaseClient
+      .from('warehouse_items')
+      .update({ qty:newQty })
+      .eq('id', data.id);
+    if(updErr) console.log('PP update error', updErr);
+  }else{
+    const { error: insErr } = await supabaseClient
+      .from('warehouse_items')
+      .insert([{category:'plant_protection',name,unit:'l',qty}]);
+    if(insErr) console.log('PP insert error', insErr);
+  }
+
+  document.getElementById('ppName').value='';
+  document.getElementById('ppQty').value='';
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+}
+
+async function addFertilizer(){
+  const name = document.getElementById('fertName').value.trim();
+  const qty = parseFloat(document.getElementById('fertQty').value || '0');
+  if(!name){alert('Podaj nazwę nawozu');return;}
+  if(isNaN(qty)){alert('Podaj ilość');return;}
+
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .eq('category','fertilizer')
+    .eq('name',name)
+    .maybeSingle();
+
+  if(error){console.log('Fert select error', error);return;}
+
+  if(data){
+    const newQty = qty;
+    const { error: updErr } = await supabaseClient
+      .from('warehouse_items')
+      .update({ qty:newQty })
+      .eq('id', data.id);
+    if(updErr) console.log('Fert update error', updErr);
+  }else{
+    const { error: insErr } = await supabaseClient
+      .from('warehouse_items')
+      .insert([{category:'fertilizer',name,unit:'kg',qty}]);
+    if(insErr) console.log('Fert insert error', insErr);
+  }
+
+  document.getElementById('fertName').value='';
+  document.getElementById('fertQty').value='';
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+}
+
+async function deleteWarehouseItem(id){
+  if(!confirm('Na pewno usunąć tę pozycję z magazynu?')) return;
+  const { error } = await supabaseClient
+    .from('warehouse_items')
+    .delete()
+    .eq('id', id);
+  if(error){
+    alert('Błąd usuwania z magazynu');
+    return;
+  }
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+}
+
+async function loadWarehouseTables(){
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .order('name',{ascending:true});
+
+  if(error){
+    console.log('Warehouse load error', error);
+    return;
+  }
+
+  const fuelInfo = document.getElementById('fuelInfo');
+  const ppBody = document.querySelector('#ppTable tbody');
+  const fertBody = document.querySelector('#fertTable tbody');
+
+  fuelInfo.textContent='';
+  ppBody.innerHTML='';
+  fertBody.innerHTML='';
+
+  (data || []).forEach(item=>{
+    if(item.category==='fuel' && item.name==='Diesel'){
+      fuelInfo.textContent = `Aktualny stan: ${item.qty} ${item.unit}`;
+      document.getElementById('fuelQty').value = item.qty;
+    }
+    if(item.category==='plant_protection'){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
+                   onchange="updateWarehouseQty(${item.id}, this.value)"></td>
+        <td>
+          <button onclick="deleteWarehouseItem(${item.id})">Usuń</button>
+          <span class="badge">${item.unit}</span>
+        </td>
+      `;
+      ppBody.appendChild(tr);
+    }
+    if(item.category==='fertilizer'){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
+                   onchange="updateWarehouseQty(${item.id}, this.value)"></td>
+        <td>
+          <button onclick="deleteWarehouseItem(${item.id})">Usuń</button>
+          <span class="badge">${item.unit}</span>
+        </td>
+      `;
+      fertBody.appendChild(tr);
+    }
+  });
+}
+
+async function updateWarehouseQty(id, value){
+  const qty = parseFloat(value || '0');
+  const { error } = await supabaseClient
+    .from('warehouse_items')
+    .update({ qty })
+    .eq('id', id);
+  if(error){
+    console.log('Warehouse qty update error', error);
+    alert('Błąd aktualizacji ilości');
+  }
+}
+
+/* MASZYNY */
+
+async function loadMachines(){
+  const { data, error } = await supabaseClient
+    .from('machines')
+    .select('*')
+    .order('name',{ascending:true});
+
+  if(error){
+    console.log('Machines load error', error);
+    document.getElementById('machinesList').textContent='Błąd ładowania maszyn';
+    return;
+  }
+
+  const list = document.getElementById('machinesList');
+  const select = document.getElementById('serviceMachineSelect');
+  list.innerHTML='';
+  select.innerHTML='<option value="">-- wybierz maszynę --</option>';
+
+  if(!data || data.length===0){
+    list.textContent='Brak maszyn';
+    return;
+  }
+
+  data.forEach(m=>{
+    const div = document.createElement('div');
+    div.style.borderBottom='1px solid #e5e7eb';
+    div.style.padding='4px 0';
+    div.innerHTML = `
+      <strong>${m.name}</strong><br>
+      Typ: ${m.type || '—'}<br>
+      Przebieg: ${m.odometer ?? '—'}<br>
+      <span class="small">Filtry/części: ${m.filter_info || '—'}</span><br>
+      <button onclick="editMachine(${m.id})">Edytuj</button>
+    `;
+    list.appendChild(div);
+
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.name;
+    opt.dataset.type = m.type || 'maszyna';
+    select.appendChild(opt);
+  });
+}
+
+async function saveMachine(){
+  const name = document.getElementById('machineName').value.trim();
+  const odo = parseFloat(document.getElementById('machineOdo').value || '0');
+  const filters = document.getElementById('machineFilters').value.trim();
+  const type = document.getElementById('machineType').value;
+  if(!name){alert('Podaj nazwę maszyny');return;}
+
+  let error;
+  if(editingMachineId){
+    ({ error } = await supabaseClient
+      .from('machines')
+      .update({ name, odometer:odo, filter_info:filters, type })
+      .eq('id', editingMachineId));
+  }else{
+    ({ error } = await supabaseClient
+      .from('machines')
+      .insert([{ name, odometer:odo, filter_info:filters, type }]));
+  }
+
+  if(error){
+    console.log('Insert/Update machine error', error);
+    alert('Błąd zapisu maszyny');
+    return;
+  }
+
+  alert(editingMachineId ? 'Maszyna zaktualizowana' : 'Maszyna zapisana');
+  editingMachineId = null;
+  document.getElementById('machineName').value='';
+  document.getElementById('machineOdo').value='';
+  document.getElementById('machineFilters').value='';
+  await loadMachines();
+}
+
+async function editMachine(id){
+  const { data, error } = await supabaseClient
+    .from('machines')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if(error || !data){
+    alert('Błąd odczytu maszyny');
+    return;
+  }
+  editingMachineId = id;
+  document.getElementById('machineName').value = data.name || '';
+  document.getElementById('machineOdo').value = data.odometer || '';
+  document.getElementById('machineFilters').value = data.filter_info || '';
+  document.getElementById('machineType').value = data.type || 'maszyna';
+  alert('Tryb edycji maszyny – zmień dane i kliknij „Zapisz maszynę”.');
+}
+
+function updateServiceCheckboxVisibility(){
+  const sel = document.getElementById('serviceMachineSelect');
+  const type = sel.options[sel.selectedIndex]?.dataset.type || 'maszyna';
+  document.getElementById('tractorService').style.display = (type==='traktor') ? 'block':'none';
+  document.getElementById('combineService').style.display = (type==='kombajn') ? 'block':'none';
+}
+
+document.getElementById('serviceMachineSelect').addEventListener('change', ()=>{
+  const id = document.getElementById('serviceMachineSelect').value;
+  updateServiceCheckboxVisibility();
+  if(id) loadServicesForMachine(Number(id));
+});
+
+async function saveService(){
+  const machineSelect = document.getElementById('serviceMachineSelect');
+  const machineId = machineSelect.value;
+  const machineType = machineSelect.options[machineSelect.selectedIndex]?.dataset.type || 'maszyna';
+  const date = document.getElementById('serviceDate').value;
+  const noteBase = document.getElementById('serviceNote').value.trim();
+
+  if(!machineId){alert('Wybierz maszynę');return;}
+  if(!date){alert('Podaj datę serwisu');return;}
+
+  let tasksSummary = '';
+
+  if(machineType==='traktor'){
+    const tasks = [
+      ['Filtr oleju','tr_fltr_oil'],
+      ['Filtr paliwa','tr_fltr_fuel'],
+      ['Olej silnikowy','tr_oil_engine'],
+      ['Filtr hydrauliczny skrzyni','tr_fltr_hyd_gear'],
+      ['Olej hydrauliczny','tr_oil_hydraulic'],
+      ['Olej przedniego mostu','tr_oil_front_axle'],
+      ['Olej zwolnic przednich','tr_oil_front_reduction'],
+      ['Filtr kabinowy wewnętrzny','tr_fltr_cabin_in'],
+      ['Filtr kabinowy zewnętrzny','tr_fltr_cabin_out']
+    ];
+    tasksSummary = tasks.map(([label,id])=>{
+      const checked = document.getElementById(id).checked;
+      return `${label}: ${checked ? 'TAK':'NIE'}`;
+    }).join('; ');
+  }else if(machineType==='kombajn'){
+    const tasks = [
+      ['Filtr oleju','cb_fltr_oil'],
+      ['Filtr paliwa','cb_fltr_fuel'],
+      ['Olej silnikowy','cb_oil_engine'],
+      ['Filtr hydrauliczny','cb_fltr_hydraulic'],
+      ['Olej hydrauliczny','cb_oil_hydraulic'],
+      ['Filtr kabinowy','cb_fltr_cabin']
+    ];
+    tasksSummary = tasks.map(([label,id])=>{
+      const checked = document.getElementById(id).checked;
+      return `${label}: ${checked ? 'TAK':'NIE'}`;
+    }).join('; ');
+  }else{
+    tasksSummary = 'Maszyna – szczegóły w opisie czynności.';
+  }
+
+  const fullNote = `Typ: ${machineType}; ${tasksSummary}; Opis: ${noteBase}`;
+
+  const { error } = await supabaseClient
+    .from('machine_services')
+    .insert([{ machine_id:Number(machineId), service_date:date, note:fullNote }]);
+
+  if(error){
+    console.log('Insert service error', error);
+    alert('Błąd zapisu serwisu');
+    return;
+  }
+
+  alert('Serwis zapisany');
+  document.getElementById('serviceDate').value='';
+  document.getElementById('serviceNote').value='';
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  await loadServicesForMachine(Number(machineId));
+}
+
+async function loadServicesForMachine(machineId){
+  const { data, error } = await supabaseClient
+    .from('machine_services')
+    .select('*')
+    .eq('machine_id', machineId)
+    .order('service_date',{ascending:false});
+
+  const box = document.getElementById('servicesList');
+
+  if(error){
+    console.log('Services load error', error);
+    box.textContent='Błąd ładowania serwisów';
+    return;
+  }
+  if(!data || data.length===0){
+    box.textContent='Brak serwisów dla tej maszyny';
+    return;
+  }
+
+  box.innerHTML='';
+  data.forEach(s=>{
+    const div = document.createElement('div');
+    div.style.borderBottom='1px solid #e5e7eb';
+    div.style.padding='4px 0';
+    div.innerHTML = `
+      <strong>${s.service_date}</strong><br>
+      <span class="small">Uwagi: ${s.note || '—'}</span>
+    `;
+    box.appendChild(div);
+  });
+}
+
+/* SEZONY */
+
+async function loadSeasonSummary(){
+  const year = parseInt(document.getElementById('seasonYearSelect').value || '0');
+  if(!year) return;
+
+  const { data, error } = await supabaseClient
+    .from('field_seasons')
+    .select('crop_name,area_ha,fields(name)')
+    .eq('season_year', year);
+
+  const box = document.getElementById('seasonSummary');
+  if(error){
+    console.log('Season load error', error);
+    box.textContent = 'Błąd ładowania sezonu';
+    return;
+  }
+  if(!data || data.length===0){
+    box.textContent = 'Brak danych dla tego roku. Przy zapisie pola podaj rok sezonu.';
+    if(seasonChart) seasonChart.destroy();
+    return;
+  }
+
+  const totals = {};
+  data.forEach(r=>{
+    const name = r.crop_name;
+    if(!totals[name]){
+      totals[name] = { area:0, fields:[] };
+    }
+    totals[name].area += Number(r.area_ha);
+    if(r.fields?.name){
+      totals[name].fields.push(r.fields.name);
+    }
+  });
+
+  let html = `Sezon ${year}:<br>`;
+  Object.entries(totals).forEach(([name,obj])=>{
+    const color = getCropColor(name);
+    const fieldsList = obj.fields.length ? obj.fields.join(', ') : '—';
+    html += `<span style="color:${color};">■</span> ${name}: ${obj.area.toFixed(2)} ha (pola: ${fieldsList})<br>`;
+  });
+  box.innerHTML = html;
+
+  const labels = Object.keys(totals);
+  const values = labels.map(n => Number(totals[n].area.toFixed(2)));
+  const barColors = labels.map(name => getCropColor(name));
+  const borderColors = barColors.map(c => c);
+
+  const ctx = document.getElementById('seasonChart').getContext('2d');
+  if(seasonChart) seasonChart.destroy();
+  seasonChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:`Powierzchnia [ha] – ${year}`,
+        data:values,
+        backgroundColor: barColors,
+        borderColor: borderColors,
+        borderWidth:1
+      }]
+    },
+    options:{
+      responsive:true,
+      scales:{ y:{ beginAtZero:true } }
+    }
+  });
+}
+
+/* START */
 
 document.addEventListener('DOMContentLoaded', async () => {
   initMap();
   await loadCrops();
   await loadFields();
   await loadTreatmentFields();
-  // reszta initu tak jak miałeś: magazyn, zabiegi, maszyny, sezony
+  await ensureFuelRow();
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+  await loadTreatmentsList();
+  await loadMachines();
+  await loadSeasonSummary();
 });
 </script>
 </body>
