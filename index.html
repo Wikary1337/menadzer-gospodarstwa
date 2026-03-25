@@ -498,14 +498,18 @@ const KURZNIE_LON = 17.747;
 
 // kolory upraw (mapa + wykres)
 const CROP_COLORS = {
+  'Pszenica': '#facc15',
   'Pszenica ozima': '#facc15',
   'Pszenica jara': '#fde047',
   'Kukurydza': '#f97316',
   'Kukurydza na kiszonke': '#fb923c',
+  'Jęczmień': '#a3e635',
   'Jęczmień jary': '#a3e635',
   'Jęczmień ozimy': '#4ade80',
+  'Żyto': '#22c55e',
   'Żyto ozime': '#22c55e',
   'Owies': '#bef264',
+  'Rzepak': '#eab308',
   'Rzepak ozimy': '#eab308',
   'Soja': '#16a34a',
   'Groch': '#22c1c3',
@@ -515,7 +519,11 @@ const CROP_COLORS = {
   'Lucerna wieloletnia': '#15803d'
 };
 function getCropColor(name){
-  return CROP_COLORS[name] || '#22c55e';
+  // spróbuj najpierw pełnej nazwy, potem pierwszego słowa
+  if (CROP_COLORS[name]) return CROP_COLORS[name];
+  const firstWord = (name || '').split(' ')[0];
+  if (CROP_COLORS[firstWord]) return CROP_COLORS[firstWord];
+  return '#22c55e'; // domyślny
 }
 
 // ====== ZAKŁADKI ======
@@ -675,7 +683,14 @@ async function loadFields(){
     const div = document.createElement('div');
     div.className = 'field-item';
     const cropName = field['crops']?.name || '—';
-    const color = getCropColor(cropName);
+const color = getCropColor(cropName);
+const layer = L.geoJSON({
+  type:'Feature',
+  geometry: field.geometry,
+  properties:{}
+}, {
+  style:{color:color,weight:2,fillOpacity:0.35}
+}).addTo(map);
     div.innerHTML = `
       <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
       <div class="field-actions">
@@ -1640,10 +1655,10 @@ async function loadSeasonSummary(){
   });
   box.innerHTML = html;
 
-  const labels = Object.keys(totals);
-  const values = Object.values(totals).map(v=>Number(v.toFixed(2)));
-  const barColors = labels.map(name => getCropColor(name));
-  const borderColors = barColors.map(c => c);
+ const labels = Object.keys(totals);
+const values = Object.values(totals).map(v=>Number(v.toFixed(2)));
+const barColors = labels.map(name => getCropColor(name));
+const borderColors = barColors.map(c => c);
 
   const ctx = document.getElementById('seasonChart').getContext('2d');
   if(seasonChart) seasonChart.destroy();
