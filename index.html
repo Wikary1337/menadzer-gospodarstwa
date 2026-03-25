@@ -123,11 +123,6 @@ button.primary:hover{background:#1d4ed8}
   padding:6px;
   border-radius:4px;
 }
-.checkbox-list label{
-  display:block;
-  font-size:13px;
-  margin-bottom:4px;
-}
 
 /* wyszukiwarka nad mapą */
 #mapSearchRow{
@@ -464,6 +459,18 @@ const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ====== GLOBALNE ======
+let map;
+let drawnItems;
+let currentPolygonGeoJSON = null;
+let fieldLayers = {};
+let editingFieldId = null;
+let editingMachineId = null;
+let editingTreatmentId = null;
+
+const KURZNIE_LAT = 50.692;
+const KURZNIE_LON = 17.747;
+
 // ====== ZAKŁADKI ======
 function showTab(id){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
@@ -473,16 +480,9 @@ function showTab(id){
 }
 
 // ====== MAPA POL HYBRYDOWA ======
-let map;
-let drawnItems;
-let currentPolygonGeoJSON = null;
-let fieldLayers = {}; // id -> layer
-let editingFieldId = null; // nowe: id edytowanego pola
-
 function initMap(){
   map = L.map('map').setView([51.9, 17.0], 7);
 
-  // satelita
   const sat = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     {
@@ -491,7 +491,6 @@ function initMap(){
     }
   ).addTo(map);
 
-  // nakładka dróg/nazw
   const roads = L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
@@ -553,12 +552,12 @@ function updateAreaFromLayer(layer){
   currentPolygonGeoJSON = geojson.geometry;
 
   const latlngs = layer.getLatLngs()[0];
-  let area = L.GeometryUtil.geodesicArea(latlngs); // m2
+  let area = L.GeometryUtil.geodesicArea(latlngs);
   const areaHa = area / 10000;
   document.getElementById('fieldArea').value = areaHa.toFixed(2);
 }
 
-// prosta wyszukiwarka miejscowości przez Nominatim
+// wyszukiwarka miejscowości
 async function searchPlace(){
   const q = document.getElementById('mapSearchInput').value.trim();
   if(!q) return;
@@ -579,7 +578,7 @@ async function searchPlace(){
   }
 }
 
-// ====== POBIERANIE UPRWAW I PÓL ======
+// ====== UPR AWY I POLA ======
 async function loadCrops(){
   const select = document.getElementById('fieldCrop');
   select.innerHTML = '<option value="">Ładowanie...</option>';
@@ -595,7 +594,6 @@ async function loadCrops(){
     return;
   }
 
-  // dodajemy więcej upraw (jeśli nie ma, to dopisujemy w pamięci)
   const extraCrops = [
     'Pszenica jara','Jęczmień jary','Jęczmień ozimy',
     'Żyto ozime','Owies','Kukurydza na kiszonke',
@@ -677,7 +675,6 @@ async function focusFieldOnMap(fieldId){
   layer.openPopup();
 }
 
-// EDYCJA / USUWANIE POLA
 async function startEditField(fieldId){
   const { data, error } = await supabaseClient
     .from('fields')
@@ -725,7 +722,6 @@ async function deleteField(fieldId){
   await loadTreatmentFields();
 }
 
-// ====== ZAPIS POLA ======
 async function saveField(){
   const name = document.getElementById('fieldName').value.trim();
   const area = parseFloat(document.getElementById('fieldArea').value);
@@ -810,7 +806,7 @@ async function loadWarehouseForTreatments(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
     .select('*')
-    .neq('category','fuel')      // pomijamy Diesel
+    .neq('category','fuel')
     .order('name', { ascending:true });
 
   if(error){
@@ -863,11 +859,28 @@ function computeDosesForTreatmentRows(totalArea){
   });
 }
 
+// pogoda Kurznie
+async function fetchDayTemperatureForKurznie(dateStr){
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${KURZNIE_LAT}&longitude=${KURZNIE_LON}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FWarsaw&start_date=${dateStr}&end_date=${dateStr}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data && data.daily && data.daily.temperature_2m_max && data.daily.temperature_2m_min){
+      const max = data.daily.temperature_2m_max[0];
+      const min = data.daily.temperature_2m_min[0];
+      return ((max + min) / 2).toFixed(1);
+    }
+  }catch(e){
+    console.log('Weather fetch error', e);
+  }
+  return null;
+}
+
 async function saveTreatment(){
   const date = document.getElementById('treatDate').value;
   const type = document.getElementById('treatType').value;
+  let temp = document.getElementById('treatTemp').value;
   const note = document.getElementById('treatNote').value.trim();
-  const temp = document.getElementById('treatTemp').value;
 
   if(!date){
     alert('Podaj datę zabiegu');
@@ -909,21 +922,40 @@ async function saveTreatment(){
     if(!confirm('Nie wybrano żadnych środków z magazynu. Zapisać zabieg bez magazynu?')) return;
   }
 
-  const fullNote = `Temp Kurznie ok.: ${temp ? temp + ' °C' : 'brak'}; ${note}`;
-
-  const { data: inserted, error } = await supabaseClient
-    .from('treatments')
-    .insert([{ date, type, note: fullNote }])
-    .select('id')
-    .single();
-
-  if(error){
-    console.log('Insert treatment error', error);
-    alert('Błąd zapisu zabiegu');
-    return;
+  if(!temp){
+    temp = await fetchDayTemperatureForKurznie(date);
   }
+  const fullNote = `Temp Kurznie ok.: ${temp !== null ? temp + ' °C' : 'brak'}; ${note}`;
 
-  const treatmentId = inserted.id;
+  let treatmentId;
+  if(editingTreatmentId){
+    const { data, error } = await supabaseClient
+      .from('treatments')
+      .update({ date, type, note: fullNote, temperature_c: temp })
+      .eq('id', editingTreatmentId)
+      .select('id')
+      .single();
+    if(error){
+      console.log('Update treatment error', error);
+      alert('Błąd zapisu zabiegu');
+      return;
+    }
+    treatmentId = data.id;
+    await supabaseClient.from('treatment_fields').delete().eq('treatment_id', treatmentId);
+    await supabaseClient.from('treatment_items').delete().eq('treatment_id', treatmentId);
+  }else{
+    const { data: inserted, error } = await supabaseClient
+      .from('treatments')
+      .insert([{ date, type, note: fullNote, temperature_c: temp }])
+      .select('id')
+      .single();
+    if(error){
+      console.log('Insert treatment error', error);
+      alert('Błąd zapisu zabiegu');
+      return;
+    }
+    treatmentId = inserted.id;
+  }
 
   const tfRows = fieldIds.map(fid=>({ treatment_id:treatmentId, field_id:fid }));
   const { error: tfErr } = await supabaseClient
@@ -938,22 +970,25 @@ async function saveTreatment(){
       .insert(tiRows);
     if(tiErr) console.log('Insert treatment_items error', tiErr);
 
-    for(const it of items){
-      const { data: wh, error: wErr } = await supabaseClient
-        .from('warehouse_items')
-        .select('qty')
-        .eq('id', it.warehouse_item_id)
-        .single();
-      if(wErr || !wh) continue;
-      const newQty = Number(wh.qty) - Number(it.amount_used);
-      await supabaseClient
-        .from('warehouse_items')
-        .update({ qty:newQty })
-        .eq('id', it.warehouse_item_id);
+    if(!editingTreatmentId){
+      for(const it of items){
+        const { data: wh, error: wErr } = await supabaseClient
+          .from('warehouse_items')
+          .select('qty')
+          .eq('id', it.warehouse_item_id)
+          .single();
+        if(wErr || !wh) continue;
+        const newQty = Number(wh.qty) - Number(it.amount_used);
+        await supabaseClient
+          .from('warehouse_items')
+          .update({ qty:newQty })
+          .eq('id', it.warehouse_item_id);
+      }
     }
   }
 
-  alert('Zabieg zapisany');
+  alert(editingTreatmentId ? 'Zabieg zaktualizowany' : 'Zabieg zapisany');
+  editingTreatmentId = null;
   document.getElementById('treatNote').value = '';
   document.getElementById('treatDate').value = '';
   document.getElementById('treatTemp').value = '';
@@ -978,7 +1013,7 @@ async function loadTreatmentsList(){
   const box = document.getElementById('treatmentsList');
   const { data, error } = await supabaseClient
     .from('treatments')
-    .select('id,date,type,note,treatment_fields(field_id,fields(name)),treatment_items(amount_used,dose_per_ha,warehouse_items(name,unit))')
+    .select('id,date,type,note,temperature_c,treatment_fields(field_id,fields(name)),treatment_items(amount_used,dose_per_ha,warehouse_items(name,unit))')
     .order('date',{ascending:false});
 
   if(error){
@@ -1005,13 +1040,78 @@ async function loadTreatmentsList(){
       return `${nm}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
     }).join('; ');
     div.innerHTML = `
-      <div><strong>${t.date}</strong> – ${t.type}</div>
+      <div><strong>${t.date}</strong> – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
       <div>Pola: ${fieldsNames}</div>
       <div>Środki: ${itemsText || '—'}</div>
       <div class="small">Notatka: ${t.note || '—'}</div>
+      <button onclick="editTreatment(${t.id})">Edytuj</button>
     `;
     box.appendChild(div);
   });
+}
+
+async function editTreatment(id){
+  const { data, error } = await supabaseClient
+    .from('treatments')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if(error || !data){
+    alert('Błąd odczytu zabiegu');
+    return;
+  }
+  editingTreatmentId = id;
+  document.getElementById('treatDate').value = data.date;
+  document.getElementById('treatType').value = data.type;
+  document.getElementById('treatTemp').value = data.temperature_c || '';
+
+  document.querySelectorAll('#treatFieldsList input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  const { data: tf, error: tfErr } = await supabaseClient
+    .from('treatment_fields')
+    .select('field_id')
+    .eq('treatment_id', id);
+  if(!tfErr && tf){
+    tf.forEach(row=>{
+      const cb = document.querySelector(`#treatFieldsList input[value="${row.field_id}"]`);
+      if(cb) cb.checked = true;
+    });
+  }
+
+  const { data: items, error: itErr } = await supabaseClient
+    .from('treatment_items')
+    .select('warehouse_item_id,amount_used')
+    .eq('treatment_id', id);
+  const tbody = document.getElementById('treatItemsBody');
+  tbody.innerHTML = '';
+  if(!itErr && items && items.length){
+    items.forEach(it=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <select class="treatItemSelect">
+            <option value="">-- wybierz --</option>
+          </select>
+        </td>
+        <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px" value="${it.amount_used}"></td>
+        <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }else{
+    tbody.innerHTML = `
+      <tr>
+        <td>
+          <select class="treatItemSelect">
+            <option value="">-- wybierz --</option>
+          </select>
+        </td>
+        <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+        <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+      </tr>
+    `;
+  }
+  await loadWarehouseForTreatments();
+  alert('Tryb edycji zabiegu – zmień dane i kliknij „Zapisz zabieg”.');
 }
 
 document.addEventListener('input', e=>{
@@ -1259,7 +1359,8 @@ async function loadMachines(){
       <strong>${m.name}</strong><br>
       Typ: ${m.type || '—'}<br>
       Przebieg: ${m.odometer ?? '—'}<br>
-      <span class="small">Filtry/części: ${m.filter_info || '—'}</span>
+      <span class="small">Filtry/części: ${m.filter_info || '—'}</span><br>
+      <button onclick="editMachine(${m.id})">Edytuj</button>
     `;
     list.appendChild(div);
 
@@ -1278,21 +1379,48 @@ async function saveMachine(){
   const type = document.getElementById('machineType').value;
   if(!name){alert('Podaj nazwę maszyny');return;}
 
-  const { error } = await supabaseClient
-    .from('machines')
-    .insert([{ name, odometer:odo, filter_info:filters, type }]);
+  let error;
+  if(editingMachineId){
+    ({ error } = await supabaseClient
+      .from('machines')
+      .update({ name, odometer:odo, filter_info:filters, type })
+      .eq('id', editingMachineId));
+  }else{
+    ({ error } = await supabaseClient
+      .from('machines')
+      .insert([{ name, odometer:odo, filter_info:filters, type }]));
+  }
 
   if(error){
-    console.log('Insert machine error', error);
+    console.log('Insert/Update machine error', error);
     alert('Błąd zapisu maszyny');
     return;
   }
 
-  alert('Maszyna zapisana');
+  alert(editingMachineId ? 'Maszyna zaktualizowana' : 'Maszyna zapisana');
+  editingMachineId = null;
   document.getElementById('machineName').value='';
   document.getElementById('machineOdo').value='';
   document.getElementById('machineFilters').value='';
   await loadMachines();
+}
+
+async function editMachine(id){
+  const { data, error } = await supabaseClient
+    .from('machines')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if(error || !data){
+    alert('Błąd odczytu maszyny');
+    return;
+  }
+  editingMachineId = id;
+  document.getElementById('machineName').value = data.name || '';
+  document.getElementById('machineOdo').value = data.odometer || '';
+  document.getElementById('machineFilters').value = data.filter_info || '';
+  document.getElementById('machineType').value = data.type || 'maszyna';
+  alert('Tryb edycji maszyny – zmień dane i kliknij „Zapisz maszynę”.');
 }
 
 function updateServiceCheckboxVisibility(){
@@ -1368,7 +1496,6 @@ async function saveService(){
   alert('Serwis zapisany');
   document.getElementById('serviceDate').value='';
   document.getElementById('serviceNote').value='';
-  // odznacz checkboxy
   document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
   await loadServicesForMachine(Number(machineId));
 }
