@@ -866,7 +866,7 @@ async function saveField(){
   await loadSeasonSummary();
 }
 
-/* ZABIEGI */
+/* ZABiegi */
 
 async function loadTreatmentFields(){
   const list = document.getElementById('treatFieldsList');
@@ -1344,7 +1344,6 @@ async function editTreatment(id){
 async function deleteTreatment(id){
   if(!confirm('Na pewno usunąć ten zabieg?')) return;
 
-  // najpierw kasujemy powiązane rekordy
   const { error: tfErr } = await supabaseClient
     .from('treatment_fields')
     .delete()
@@ -1361,7 +1360,6 @@ async function deleteTreatment(id){
     console.log('Error deleting treatment_items', tiErr);
   }
 
-  // na końcu sam zabieg
   const { error } = await supabaseClient
     .from('treatments')
     .delete()
