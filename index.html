@@ -142,6 +142,32 @@ button.primary:hover{background:#1d4ed8}
   border:1px solid #d1d5db;
   border-radius:4px;
 }
+
+/* przyciski przy polach */
+.field-actions{
+  margin-top:4px;
+}
+.field-actions button{
+  margin-right:4px;
+  padding:2px 6px;
+  font-size:11px;
+}
+
+/* serwis – checkboxy */
+.service-group{
+  border:1px solid #e5e7eb;
+  border-radius:4px;
+  padding:6px;
+  margin-top:6px;
+}
+.service-group h4{
+  margin:0 0 4px 0;
+  font-size:13px;
+}
+.service-group label{
+  display:block;
+  font-size:12px;
+}
 </style>
 </head>
 
@@ -223,6 +249,11 @@ button.primary:hover{background:#1d4ed8}
           </select>
         </label>
       </div>
+      <div>
+        <label>Przybliżona temperatura [°C]<br>
+          <input id="treatTemp" type="number" step="0.5" placeholder="np. 15">
+        </label>
+      </div>
     </div>
 
     <div class="form-row">
@@ -234,7 +265,7 @@ button.primary:hover{background:#1d4ed8}
       </div>
 
       <div class="col">
-        <label>Środki z magazynu</label>
+        <label>Środki z magazynu (bez paliwa)</label>
         <table class="table small">
           <thead>
             <tr>
@@ -346,6 +377,15 @@ button.primary:hover{background:#1d4ed8}
           </label>
         </div>
         <div class="form-row">
+          <label>Typ maszyny<br>
+            <select id="machineType">
+              <option value="traktor">Traktor</option>
+              <option value="kombajn">Kombajn</option>
+              <option value="maszyna">Maszyna</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row">
           <label>Informacje o filtrach, częściach itp.<br>
             <textarea id="machineFilters" rows="3" style="width:100%;"></textarea>
           </label>
@@ -367,15 +407,42 @@ button.primary:hover{background:#1d4ed8}
           <label>Data serwisu<br>
             <input id="serviceDate" type="date">
           </label>
-          <label>Przebieg przy serwisie<br>
-            <input id="serviceOdo" type="number" step="0.1">
-          </label>
         </div>
+
         <div class="form-row">
-          <label>Uwagi<br>
+          <label>Opis czynności<br>
             <textarea id="serviceNote" rows="2" style="width:100%;"></textarea>
           </label>
         </div>
+
+        <div id="serviceCheckboxes" class="service-group">
+          <h4>Czynności (zależnie od typu)</h4>
+          <div id="tractorService" style="display:none;">
+            <label><input type="checkbox" id="tr_fltr_oil"> Filtr oleju</label>
+            <label><input type="checkbox" id="tr_fltr_fuel"> Filtr paliwa</label>
+            <label><input type="checkbox" id="tr_oil_engine"> Olej silnikowy</label>
+            <label><input type="checkbox" id="tr_fltr_hyd_gear"> Filtr hydrauliczny skrzyni</label>
+            <label><input type="checkbox" id="tr_oil_hydraulic"> Olej hydrauliczny</label>
+            <label><input type="checkbox" id="tr_oil_front_axle"> Olej przedniego mostu</label>
+            <label><input type="checkbox" id="tr_oil_front_reduction"> Olej zwolnic przednich</label>
+            <label><input type="checkbox" id="tr_fltr_cabin_in"> Filtr kabinowy wewnętrzny</label>
+            <label><input type="checkbox" id="tr_fltr_cabin_out"> Filtr kabinowy zewnętrzny</label>
+          </div>
+
+          <div id="combineService" style="display:none;">
+            <label><input type="checkbox" id="cb_fltr_oil"> Filtr oleju</label>
+            <label><input type="checkbox" id="cb_fltr_fuel"> Filtr paliwa</label>
+            <label><input type="checkbox" id="cb_oil_engine"> Olej silnikowy</label>
+            <label><input type="checkbox" id="cb_fltr_hydraulic"> Filtr hydrauliczny</label>
+            <label><input type="checkbox" id="cb_oil_hydraulic"> Olej hydrauliczny</label>
+            <label><input type="checkbox" id="cb_fltr_cabin"> Filtr kabinowy</label>
+          </div>
+
+          <div id="machineServiceInfo" class="small">
+            Dla typu „Maszyna” użyj pola „Opis czynności”.
+          </div>
+        </div>
+
         <button class="primary" onclick="saveService()">Zapisz serwis</button>
         <div id="servicesList" class="small" style="margin-top:10px;">Wybierz maszynę, aby zobaczyć historię serwisów.</div>
       </div>
@@ -393,8 +460,8 @@ button.primary:hover{background:#1d4ed8}
 
 <script>
 // ====== KONFIGURACJA SUPABASE ======
-const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co"; // PODMIEN
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";                      // PODMIEN
+const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ====== ZAKŁADKI ======
@@ -410,6 +477,7 @@ let map;
 let drawnItems;
 let currentPolygonGeoJSON = null;
 let fieldLayers = {}; // id -> layer
+let editingFieldId = null; // nowe: id edytowanego pola
 
 function initMap(){
   map = L.map('map').setView([51.9, 17.0], 7);
@@ -472,7 +540,6 @@ function initMap(){
     });
   });
 
-  // Enter w wyszukiwarce
   document.getElementById('mapSearchInput').addEventListener('keydown', e=>{
     if(e.key === 'Enter'){
       e.preventDefault();
@@ -528,6 +595,19 @@ async function loadCrops(){
     return;
   }
 
+  // dodajemy więcej upraw (jeśli nie ma, to dopisujemy w pamięci)
+  const extraCrops = [
+    'Pszenica jara','Jęczmień jary','Jęczmień ozimy',
+    'Żyto ozime','Owies','Kukurydza na kiszonke',
+    'Ziemniaki','Burak cukrowy','Soja','Groch',
+    'Łąka trwała','Lucerna wieloletnia'
+  ];
+  extraCrops.forEach(name=>{
+    if(!data.find(c=>c.name===name)){
+      data.push({id:`extra_${name}`,name});
+    }
+  });
+
   select.innerHTML = '<option value="">-- wybierz uprawe --</option>';
   (data || []).forEach(crop => {
     const opt = document.createElement('option');
@@ -543,7 +623,7 @@ async function loadFields(){
 
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('id,name,area_ha,current_crop_id,crops!fields_current_crop_id_fkey(name),geometry')
+    .select('id,name,area_ha,current_crop_id,crops!fields_current_crop_id_fkey(name),geometry,notes')
     .order('id', { ascending: true });
 
   if(error){
@@ -565,7 +645,13 @@ async function loadFields(){
     const div = document.createElement('div');
     div.className = 'field-item';
     const cropName = field['crops']?.name || '—';
-    div.innerHTML = `<strong>${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}`;
+    div.innerHTML = `
+      <strong>${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
+      <div class="field-actions">
+        <button onclick="startEditField(${field.id});event.stopPropagation();">Edytuj</button>
+        <button onclick="deleteField(${field.id});event.stopPropagation();">Usuń</button>
+      </div>
+    `;
     div.onclick = () => focusFieldOnMap(field.id);
     container.appendChild(div);
 
@@ -591,6 +677,54 @@ async function focusFieldOnMap(fieldId){
   layer.openPopup();
 }
 
+// EDYCJA / USUWANIE POLA
+async function startEditField(fieldId){
+  const { data, error } = await supabaseClient
+    .from('fields')
+    .select('*')
+    .eq('id', fieldId)
+    .single();
+  if(error || !data){
+    alert('Błąd odczytu pola');
+    return;
+  }
+  editingFieldId = fieldId;
+  document.getElementById('fieldName').value = data.name || '';
+  document.getElementById('fieldArea').value = data.area_ha || '';
+  document.getElementById('fieldNotes').value = data.notes || '';
+  if(data.current_crop_id){
+    document.getElementById('fieldCrop').value = data.current_crop_id;
+  }
+
+  drawnItems.clearLayers();
+  if(data.geometry){
+    const layer = L.geoJSON({
+      type:'Feature',
+      geometry:data.geometry,
+      properties:{}
+    }).getLayers()[0];
+    drawnItems.addLayer(layer);
+    map.fitBounds(layer.getBounds());
+    updateAreaFromLayer(layer);
+  }
+  alert('Tryb edycji pola – zmień dane i kliknij „Zapisz pole”, aby nadpisać.');
+}
+
+async function deleteField(fieldId){
+  if(!confirm('Na pewno usunąć to pole?')) return;
+  const { error } = await supabaseClient
+    .from('fields')
+    .delete()
+    .eq('id', fieldId);
+  if(error){
+    alert('Błąd usuwania pola');
+    return;
+  }
+  alert('Pole usunięte');
+  await loadFields();
+  await loadTreatmentFields();
+}
+
 // ====== ZAPIS POLA ======
 async function saveField(){
   const name = document.getElementById('fieldName').value.trim();
@@ -611,21 +745,30 @@ async function saveField(){
     name,
     area_ha: area,
     geometry: currentPolygonGeoJSON,
-    current_crop_id: cropId ? Number(cropId) : null,
+    current_crop_id: (cropId && !String(cropId).startsWith('extra_')) ? Number(cropId) : null,
     notes
   };
 
-  const { error } = await supabaseClient
-    .from('fields')
-    .insert([field]);
+  let error;
+  if(editingFieldId){
+    ({ error } = await supabaseClient
+      .from('fields')
+      .update(field)
+      .eq('id', editingFieldId));
+  }else{
+    ({ error } = await supabaseClient
+      .from('fields')
+      .insert([field]));
+  }
 
   if(error){
-    console.log('Insert field error', error);
+    console.log('Insert/Update field error', error);
     alert('Błąd zapisu pola');
     return;
   }
 
-  alert('Pole zapisane');
+  alert(editingFieldId ? 'Pole zaktualizowane' : 'Pole zapisane');
+  editingFieldId = null;
   document.getElementById('fieldName').value = '';
   document.getElementById('fieldArea').value = '';
   document.getElementById('fieldCrop').value = '';
@@ -667,6 +810,7 @@ async function loadWarehouseForTreatments(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
     .select('*')
+    .neq('category','fuel')      // pomijamy Diesel
     .order('name', { ascending:true });
 
   if(error){
@@ -723,6 +867,7 @@ async function saveTreatment(){
   const date = document.getElementById('treatDate').value;
   const type = document.getElementById('treatType').value;
   const note = document.getElementById('treatNote').value.trim();
+  const temp = document.getElementById('treatTemp').value;
 
   if(!date){
     alert('Podaj datę zabiegu');
@@ -764,9 +909,11 @@ async function saveTreatment(){
     if(!confirm('Nie wybrano żadnych środków z magazynu. Zapisać zabieg bez magazynu?')) return;
   }
 
+  const fullNote = `Temp Kurznie ok.: ${temp ? temp + ' °C' : 'brak'}; ${note}`;
+
   const { data: inserted, error } = await supabaseClient
     .from('treatments')
-    .insert([{ date, type, note }])
+    .insert([{ date, type, note: fullNote }])
     .select('id')
     .single();
 
@@ -809,6 +956,7 @@ async function saveTreatment(){
   alert('Zabieg zapisany');
   document.getElementById('treatNote').value = '';
   document.getElementById('treatDate').value = '';
+  document.getElementById('treatTemp').value = '';
   document.querySelectorAll('#treatFieldsList input[type="checkbox"]').forEach(cb=>cb.checked=false);
   document.getElementById('treatItemsBody').innerHTML = `
     <tr>
@@ -1001,6 +1149,20 @@ async function addFertilizer(){
   await loadWarehouseForTreatments();
 }
 
+async function deleteWarehouseItem(id){
+  if(!confirm('Na pewno usunąć tę pozycję z magazynu?')) return;
+  const { error } = await supabaseClient
+    .from('warehouse_items')
+    .delete()
+    .eq('id', id);
+  if(error){
+    alert('Błąd usuwania z magazynu');
+    return;
+  }
+  await loadWarehouseTables();
+  await loadWarehouseForTreatments();
+}
+
 async function loadWarehouseTables(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
@@ -1031,7 +1193,10 @@ async function loadWarehouseTables(){
         <td>${item.name}</td>
         <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
                    onchange="updateWarehouseQty(${item.id}, this.value)"></td>
-        <td><span class="badge">${item.unit}</span></td>
+        <td>
+          <button onclick="deleteWarehouseItem(${item.id})">Usuń</button>
+          <span class="badge">${item.unit}</span>
+        </td>
       `;
       ppBody.appendChild(tr);
     }
@@ -1041,7 +1206,10 @@ async function loadWarehouseTables(){
         <td>${item.name}</td>
         <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
                    onchange="updateWarehouseQty(${item.id}, this.value)"></td>
-        <td><span class="badge">${item.unit}</span></td>
+        <td>
+          <button onclick="deleteWarehouseItem(${item.id})">Usuń</button>
+          <span class="badge">${item.unit}</span>
+        </td>
       `;
       fertBody.appendChild(tr);
     }
@@ -1089,6 +1257,7 @@ async function loadMachines(){
     div.style.padding='4px 0';
     div.innerHTML = `
       <strong>${m.name}</strong><br>
+      Typ: ${m.type || '—'}<br>
       Przebieg: ${m.odometer ?? '—'}<br>
       <span class="small">Filtry/części: ${m.filter_info || '—'}</span>
     `;
@@ -1097,6 +1266,7 @@ async function loadMachines(){
     const opt = document.createElement('option');
     opt.value = m.id;
     opt.textContent = m.name;
+    opt.dataset.type = m.type || 'maszyna';
     select.appendChild(opt);
   });
 }
@@ -1105,11 +1275,12 @@ async function saveMachine(){
   const name = document.getElementById('machineName').value.trim();
   const odo = parseFloat(document.getElementById('machineOdo').value || '0');
   const filters = document.getElementById('machineFilters').value.trim();
+  const type = document.getElementById('machineType').value;
   if(!name){alert('Podaj nazwę maszyny');return;}
 
   const { error } = await supabaseClient
     .from('machines')
-    .insert([{ name, odometer:odo, filter_info:filters }]);
+    .insert([{ name, odometer:odo, filter_info:filters, type }]);
 
   if(error){
     console.log('Insert machine error', error);
@@ -1124,23 +1295,69 @@ async function saveMachine(){
   await loadMachines();
 }
 
+function updateServiceCheckboxVisibility(){
+  const sel = document.getElementById('serviceMachineSelect');
+  const type = sel.options[sel.selectedIndex]?.dataset.type || 'maszyna';
+  document.getElementById('tractorService').style.display = (type==='traktor') ? 'block':'none';
+  document.getElementById('combineService').style.display = (type==='kombajn') ? 'block':'none';
+}
+
 document.getElementById('serviceMachineSelect').addEventListener('change', ()=>{
   const id = document.getElementById('serviceMachineSelect').value;
+  updateServiceCheckboxVisibility();
   if(id) loadServicesForMachine(Number(id));
 });
 
 async function saveService(){
-  const machineId = document.getElementById('serviceMachineSelect').value;
+  const machineSelect = document.getElementById('serviceMachineSelect');
+  const machineId = machineSelect.value;
+  const machineType = machineSelect.options[machineSelect.selectedIndex]?.dataset.type || 'maszyna';
   const date = document.getElementById('serviceDate').value;
-  const odo = parseFloat(document.getElementById('serviceOdo').value || '0');
-  const note = document.getElementById('serviceNote').value.trim();
+  const noteBase = document.getElementById('serviceNote').value.trim();
 
   if(!machineId){alert('Wybierz maszynę');return;}
   if(!date){alert('Podaj datę serwisu');return;}
 
+  let tasksSummary = '';
+
+  if(machineType==='traktor'){
+    const tasks = [
+      ['Filtr oleju','tr_fltr_oil'],
+      ['Filtr paliwa','tr_fltr_fuel'],
+      ['Olej silnikowy','tr_oil_engine'],
+      ['Filtr hydrauliczny skrzyni','tr_fltr_hyd_gear'],
+      ['Olej hydrauliczny','tr_oil_hydraulic'],
+      ['Olej przedniego mostu','tr_oil_front_axle'],
+      ['Olej zwolnic przednich','tr_oil_front_reduction'],
+      ['Filtr kabinowy wewnętrzny','tr_fltr_cabin_in'],
+      ['Filtr kabinowy zewnętrzny','tr_fltr_cabin_out']
+    ];
+    tasksSummary = tasks.map(([label,id])=>{
+      const checked = document.getElementById(id).checked;
+      return `${label}: ${checked ? 'TAK':'NIE'}`;
+    }).join('; ');
+  }else if(machineType==='kombajn'){
+    const tasks = [
+      ['Filtr oleju','cb_fltr_oil'],
+      ['Filtr paliwa','cb_fltr_fuel'],
+      ['Olej silnikowy','cb_oil_engine'],
+      ['Filtr hydrauliczny','cb_fltr_hydraulic'],
+      ['Olej hydrauliczny','cb_oil_hydraulic'],
+      ['Filtr kabinowy','cb_fltr_cabin']
+    ];
+    tasksSummary = tasks.map(([label,id])=>{
+      const checked = document.getElementById(id).checked;
+      return `${label}: ${checked ? 'TAK':'NIE'}`;
+    }).join('; ');
+  }else{
+    tasksSummary = 'Maszyna – szczegóły w opisie czynności.';
+  }
+
+  const fullNote = `Typ: ${machineType}; ${tasksSummary}; Opis: ${noteBase}`;
+
   const { error } = await supabaseClient
     .from('machine_services')
-    .insert([{ machine_id:Number(machineId), service_date:date, odometer_at_service:odo, note }]);
+    .insert([{ machine_id:Number(machineId), service_date:date, note:fullNote }]);
 
   if(error){
     console.log('Insert service error', error);
@@ -1150,8 +1367,9 @@ async function saveService(){
 
   alert('Serwis zapisany');
   document.getElementById('serviceDate').value='';
-  document.getElementById('serviceOdo').value='';
   document.getElementById('serviceNote').value='';
+  // odznacz checkboxy
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
   await loadServicesForMachine(Number(machineId));
 }
 
@@ -1180,7 +1398,7 @@ async function loadServicesForMachine(machineId){
     div.style.borderBottom='1px solid #e5e7eb';
     div.style.padding='4px 0';
     div.innerHTML = `
-      <strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '—'}<br>
+      <strong>${s.service_date}</strong><br>
       <span class="small">Uwagi: ${s.note || '—'}</span>
     `;
     box.appendChild(div);
