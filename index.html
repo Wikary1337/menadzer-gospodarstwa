@@ -14,37 +14,54 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:Arial,sans-serif;
-  background:#f3f3f3;
+  background:#0f172a;
   padding:20px;
+  color:#0f172a;
 }
 .container{
   max-width:1200px;
   margin:auto;
-  background:#fff;
+  background:#f9fafb;
   padding:16px;
-  border-radius:8px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  border-radius:16px;
+  box-shadow:0 20px 40px rgba(15,23,42,0.35);
+  border:1px solid #1f2937;
 }
-h1{margin-bottom:10px}
-h2{margin-top:10px;margin-bottom:6px}
-.tabs{margin-bottom:12px}
+h1{
+  margin-bottom:4px;
+  font-size:26px;
+}
+.app-subtitle{
+  font-size:13px;
+  color:#6b7280;
+  margin-bottom:12px;
+}
+.tabs{
+  margin-bottom:12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
 .tabs button{
-  margin-right:6px;
-  padding:6px 10px;
+  padding:6px 12px;
   border:none;
-  border-radius:4px;
+  border-radius:999px;
   background:#e5e7eb;
   cursor:pointer;
+  font-size:13px;
 }
-.tabs button.active{background:#2563eb;color:#fff}
+.tabs button.active{
+  background:#2563eb;
+  color:#fff;
+}
 .section{display:none}
 .section.active{display:block}
 
 #map{
   width:100%;
-  height:500px;
+  height:460px;
   border:1px solid #e5e7eb;
-  border-radius:6px;
+  border-radius:10px;
   margin-top:8px;
 }
 
@@ -60,26 +77,29 @@ h2{margin-top:10px;margin-bottom:6px}
 .form-row input, .form-row select, .form-row textarea{
   padding:6px 8px;
   border:1px solid #d1d5db;
-  border-radius:4px;
+  border-radius:6px;
   min-width:180px;
+  font-size:13px;
+  background:#ffffff;
 }
 button.primary{
-  background:#2563eb;
+  background:#16a34a;
   color:#fff;
   border:none;
   padding:8px 14px;
-  border-radius:4px;
+  border-radius:999px;
   cursor:pointer;
   margin-top:10px;
+  font-size:13px;
 }
-button.primary:hover{background:#1d4ed8}
+button.primary:hover{background:#15803d}
 .small{font-size:12px;color:#6b7280}
 #fieldsContainer .field-item{
   padding:6px 0;
-  border-bottom:1px solid #f3f4f6;
+  border-bottom:1px solid #e5e7eb;
   cursor:pointer;
 }
-#fieldsContainer .field-item:hover{background:#f9fafb}
+#fieldsContainer .field-item:hover{background:#f3f4f6}
 
 .table{
   width:100%;
@@ -91,7 +111,7 @@ button.primary:hover{background:#1d4ed8}
   padding:4px 6px;
   font-size:13px;
 }
-.table th{background:#f3f4f6;text-align:left}
+.table th{background:#e5e7eb;text-align:left}
 
 .badge{
   display:inline-block;
@@ -109,12 +129,13 @@ button.primary:hover{background:#1d4ed8}
   flex:1 1 260px;
 }
 .checkbox-list{
-  max-height:160px;
+  max-height:200px;
   overflow:auto;
   border:1px solid #e5e7eb;
-  padding:6px;
-  border-radius:4px;
+  border-radius:6px;
+  background:#ffffff;
 }
+
 #mapSearchRow{
   display:flex;
   gap:8px;
@@ -125,7 +146,7 @@ button.primary:hover{background:#1d4ed8}
   flex:1;
   padding:6px 8px;
   border:1px solid #d1d5db;
-  border-radius:4px;
+  border-radius:6px;
 }
 .field-actions{
   margin-top:4px;
@@ -135,11 +156,13 @@ button.primary:hover{background:#1d4ed8}
   padding:2px 6px;
   font-size:11px;
 }
+
 .service-group{
   border:1px solid #e5e7eb;
-  border-radius:4px;
+  border-radius:6px;
   padding:6px;
   margin-top:6px;
+  background:#f9fafb;
 }
 .service-group h4{
   margin:0 0 4px 0;
@@ -153,23 +176,180 @@ button.primary:hover{background:#1d4ed8}
   max-width:600px;
   margin-top:12px;
 }
+
+/* START PAGE */
+#start{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.start-hero{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+}
+.start-left{
+  flex:2 1 260px;
+}
+.start-right{
+  flex:1 1 220px;
+  border-radius:12px;
+  padding:10px;
+  background:linear-gradient(135deg,#1d4ed8,#22c55e);
+  color:#e5e7eb;
+}
+.start-right h3{
+  margin-bottom:4px;
+}
+.start-metrics{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.metric-card{
+  flex:1 1 160px;
+  border-radius:10px;
+  padding:8px;
+  background:#ffffff;
+  border:1px solid #e5e7eb;
+}
+.metric-label{
+  font-size:11px;
+  color:#6b7280;
+}
+.metric-value{
+  font-size:15px;
+  margin-top:2px;
+}
+.start-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:8px;
+}
+.start-actions button{
+  border-radius:999px;
+}
+.start-weather-main{
+  font-size:22px;
+  font-weight:bold;
+}
+.start-weather-small{
+  font-size:12px;
+}
+
+/* Treatments fields table */
+#treatFieldsTable{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:4px;
+}
+#treatFieldsTable th,#treatFieldsTable td{
+  border:1px solid #e5e7eb;
+  padding:3px 4px;
+  font-size:12px;
+}
+#treatFieldsTable th{
+  background:#e5e7eb;
+}
+
+/* Machine services */
+.service-entry{
+  border:1px solid #e5e7eb;
+  border-radius:6px;
+  padding:6px;
+  margin-bottom:6px;
+  background:#ffffff;
+}
+.service-entry-header{
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+}
+.service-chips{
+  margin-top:4px;
+}
+.service-chip{
+  display:inline-block;
+  padding:2px 6px;
+  font-size:11px;
+  border-radius:999px;
+  margin:0 4px 4px 0;
+  background:#eef2ff;
+  border:1px solid #c7d2fe;
+}
+
+/* Popup field info */
+.popup-title{
+  font-weight:bold;
+}
+.popup-row{
+  font-size:12px;
+  margin-top:2px;
+}
+
+/* Delete treatment dialog */
+#undoStockWrapper{
+  margin-top:6px;
+  font-size:12px;
+}
 </style>
 </head>
 
 <body>
 <div class="container">
-  <h1>Gospodarstwo – Panel</h1>
+  <h1>Gospodarstwo Rolne Kaczmarek</h1>
+  <div class="app-subtitle">Panel zarządzania polami, zabiegami, magazynem i maszynami</div>
 
   <div class="tabs">
-    <button class="active" onclick="showTab('fields')">Pola</button>
+    <button class="active" onclick="showTab('start')">Start</button>
+    <button onclick="showTab('fields')">Pola</button>
     <button onclick="showTab('treatments')">Zabiegi</button>
     <button onclick="showTab('warehouse')">Magazyn</button>
     <button onclick="showTab('machines')">Maszyny</button>
     <button onclick="showTab('seasons')">Sezony</button>
   </div>
 
+  <!-- START -->
+  <div id="start" class="section active">
+    <div class="start-hero">
+      <div class="start-left">
+        <div class="start-hello">
+          <div style="font-size:20px;margin-bottom:4px;">Witaj, <strong>Gospodarstwo Rolne Kaczmarek</strong></div>
+          <div id="startDateTime" class="small"></div>
+        </div>
+        <div class="start-actions">
+          <button class="primary" onclick="showTab('fields')">Przejdź do pól</button>
+          <button class="primary" onclick="showTab('treatments')">Dodaj zabieg</button>
+          <button class="primary" onclick="showTab('warehouse')">Sprawdź magazyn</button>
+        </div>
+        <div class="start-metrics" id="startMetrics">
+          <div class="metric-card">
+            <div class="metric-label">Liczba pól</div>
+            <div class="metric-value" id="metricFields">–</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Powierzchnia łączna [ha]</div>
+            <div class="metric-value" id="metricArea">–</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Ostatni zabieg</div>
+            <div class="metric-value" id="metricLastTreatment">–</div>
+          </div>
+        </div>
+      </div>
+      <div class="start-right">
+        <h3>Aktualna pogoda – Kurznie</h3>
+        <div id="startWeatherMain" class="start-weather-main">–</div>
+        <div id="startWeatherSmall" class="start-weather-small">Ładowanie...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- POLA -->
-  <div id="fields" class="section active">
+  <div id="fields" class="section">
     <h2>Pola</h2>
     <p>Narysuj granice pola na mapie satelitarnej. Poniżej możesz wyszukać miejscowość.</p>
 
@@ -206,6 +386,11 @@ button.primary:hover{background:#1d4ed8}
     </div>
 
     <div class="form-row">
+      <div>
+        <label>Data siewu (opcjonalnie)<br>
+          <input id="fieldSowDate" type="date">
+        </label>
+      </div>
       <div style="flex:1">
         <label>Uwagi<br>
           <textarea id="fieldNotes" rows="2" style="width:100%;"></textarea>
@@ -250,8 +435,20 @@ button.primary:hover{background:#1d4ed8}
     <div class="form-row">
       <div class="col">
         <label>Pola objęte zabiegiem</label>
-        <div id="treatFieldsList" class="checkbox-list small">
-          Ładowanie pól...
+        <div class="checkbox-list small">
+          <table id="treatFieldsTable">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Uprawa</th>
+                <th>Nazwa pola</th>
+                <th>Pow. [ha]</th>
+              </tr>
+            </thead>
+            <tbody id="treatFieldsList">
+              <tr><td colspan="4">Ładowanie pól...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -279,7 +476,6 @@ button.primary:hover{background:#1d4ed8}
         </table>
         <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
 
-        <!-- ŚRODKI JEDNORAZOWE SPOZA MAGAZYNU -->
         <h3 style="margin-top:8px;">Środki jednorazowe (poza magazynem)</h3>
         <table class="table small">
           <thead>
@@ -506,35 +702,89 @@ const KURZNIE_LAT = 50.692;
 const KURZNIE_LON = 17.747;
 
 const CROP_COLORS = {
-  'Pszenica': '#facc15',
   'Pszenica ozima': '#facc15',
-  'Pszenica jara': '#fde047',
-  'Kukurydza': '#f97316',
-  'Kukurydza na kiszonke': '#fb923c',
-  'Jęczmień': '#a3e635',
-  'Jęczmień jary': '#a3e635',
-  'Jęczmień ozimy': '#4ade80',
-  'Żyto': '#22c55e',
-  'Żyto ozime': '#22c55e',
-  'Owies': '#bef264',
-  'Rzepak': '#eab308',
+  'Pszenica jara': '#f97316',
+  'Kukurydza': '#ef4444',
+  'Kukurydza na kiszonke': '#b91c1c',
+  'Jęczmień ozimy': '#22c55e',
+  'Jęczmień jary': '#16a34a',
+  'Żyto ozime': '#0d9488',
+  'Owies': '#0891b2',
   'Rzepak ozimy': '#eab308',
-  'Soja': '#16a34a',
-  'Groch': '#22c1c3',
-  'Burak cukrowy': '#ef4444',
+  'Soja': '#22c55e',
+  'Groch': '#10b981',
+  'Burak cukrowy': '#8b5cf6',
   'Ziemniaki': '#a855f7',
-  'Łąka': '#16a34a',
-  'Łąka trwała': '#16a34a',
-  'Lucerna': '#15803d',
-  'Lucerna wieloletnia': '#15803d'
+  'Łąka trwała': '#15803d',
+  'Lucerna wieloletnia': '#4ade80'
 };
 function getCropColor(name){
   const n = (name || '').trim();
   if (CROP_COLORS[n]) return CROP_COLORS[n];
-  const firstWord = n.split(' ')[0];
-  if (CROP_COLORS[firstWord]) return CROP_COLORS[firstWord];
   return '#22c55e';
 }
+
+/* START TAB & WEATHER */
+
+function updateStartClock(){
+  const el = document.getElementById('startDateTime');
+  const now = new Date();
+  const date = now.toLocaleDateString('pl-PL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const time = now.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+  el.textContent = `${date}, godz. ${time}`;
+}
+
+async function loadStartWeather(){
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${KURZNIE_LAT}&longitude=${KURZNIE_LON}&current=temperature_2m,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FWarsaw`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data && data.current && data.daily){
+      const t = data.current.temperature_2m;
+      const w = data.current.wind_speed_10m;
+      const tmax = data.daily.temperature_2m_max[0];
+      const tmin = data.daily.temperature_2m_min[0];
+      document.getElementById('startWeatherMain').textContent = `${t.toFixed(1)} °C`;
+      document.getElementById('startWeatherSmall').textContent =
+        `Dziś max ${tmax.toFixed(1)} °C, min ${tmin.toFixed(1)} °C, wiatr ${w.toFixed(1)} m/s`;
+    }else{
+      document.getElementById('startWeatherSmall').textContent = 'Brak danych pogodowych';
+    }
+  }catch(e){
+    console.log('Weather start error', e);
+    document.getElementById('startWeatherSmall').textContent = 'Błąd pobierania pogody';
+  }
+}
+
+async function updateStartMetrics(){
+  try{
+    const { data: fields, error: fErr } = await supabaseClient
+      .from('fields')
+      .select('id,area_ha')
+      .order('id',{ascending:true});
+    if(!fErr && fields){
+      const count = fields.length;
+      const area = fields.reduce((s,f)=>s+Number(f.area_ha||0),0);
+      document.getElementById('metricFields').textContent = count;
+      document.getElementById('metricArea').textContent = area.toFixed(2);
+    }
+    const { data: treats, error: tErr } = await supabaseClient
+      .from('treatments')
+      .select('date,type')
+      .order('date',{ascending:false})
+      .limit(1);
+    if(!tErr && treats && treats.length){
+      document.getElementById('metricLastTreatment').textContent =
+        `${treats[0].date} – ${treats[0].type}`;
+    }else{
+      document.getElementById('metricLastTreatment').textContent = 'Brak';
+    }
+  }catch(e){
+    console.log('Start metrics error', e);
+  }
+}
+
+/* TABS */
 
 function showTab(id){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
@@ -543,6 +793,8 @@ function showTab(id){
   document.getElementById(id).classList.add('active');
   if(id === 'seasons') loadSeasonSummary();
 }
+
+/* MAPA */
 
 function initMap(){
   map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
@@ -623,6 +875,8 @@ async function searchPlace(){
   }
 }
 
+/* UPRAWY */
+
 async function loadCrops(){
   const select = document.getElementById('fieldCrop');
   select.innerHTML = '<option value="">Ładowanie...</option>';
@@ -638,20 +892,21 @@ async function loadCrops(){
     return;
   }
 
-  const extraCrops = [
-    'Pszenica jara','Jęczmień jary','Jęczmień ozimy',
-    'Żyto ozime','Owies','Kukurydza na kiszonke',
-    'Ziemniaki','Burak cukrowy','Soja','Groch',
-    'Łąka trwała','Lucerna wieloletnia'
+  const wanted = [
+    'Pszenica ozima','Pszenica jara','Kukurydza','Kukurydza na kiszonke',
+    'Jęczmień ozimy','Jęczmień jary','Żyto ozime','Owies',
+    'Rzepak ozimy','Soja','Groch','Burak cukrowy',
+    'Ziemniaki','Łąka trwała','Lucerna wieloletnia'
   ];
-  extraCrops.forEach(name=>{
-    if(!data.find(c=>c.name===name)){
-      data.push({id:`extra_${name}`,name});
-    }
+  const filtered = [];
+  wanted.forEach(name=>{
+    const row = (data || []).find(c=>c.name===name);
+    if(row) filtered.push(row);
+    else filtered.push({id:`extra_${name}`,name});
   });
 
   select.innerHTML = '<option value="">-- wybierz uprawe --</option>';
-  (data || []).forEach(crop => {
+  filtered.forEach(crop => {
     const opt = document.createElement('option');
     opt.value = crop.id;
     opt.textContent = crop.name;
@@ -659,13 +914,15 @@ async function loadCrops(){
   });
 }
 
+/* POLA */
+
 async function loadFields(){
   const container = document.getElementById('fieldsContainer');
   container.textContent = 'Ładowanie...';
 
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('id,name,area_ha,current_crop_id,crops!fields_current_crop_id_fkey(name),geometry,notes')
+    .select('id,name,area_ha,current_crop_id,crops!fields_current_crop_id_fkey(name),geometry,notes,sow_date')
     .order('id', { ascending: true });
 
   if(error){
@@ -691,8 +948,11 @@ async function loadFields(){
     const cropName = field['crops']?.name || '—';
     const color = getCropColor(cropName);
 
+    const sow = field.sow_date ? `, siew: ${field.sow_date}` : '';
+    const notes = field.notes ? `, uwagi: ${field.notes}` : '';
+
     div.innerHTML = `
-      <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}
+      <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}${sow}${notes}
       <div class="field-actions">
         <button onclick="startEditField(${field.id});event.stopPropagation();">Edytuj</button>
         <button onclick="deleteField(${field.id});event.stopPropagation();">Usuń</button>
@@ -710,7 +970,7 @@ async function loadFields(){
         style:{color:color,weight:2,fillOpacity:0.35}
       }).addTo(map);
 
-      layer.bindPopup(`<strong>${field.name}</strong><br>Uprawa: ${cropName}<br>Powierzchnia: ${field.area_ha.toFixed(2)} ha`);
+      attachFieldPopup(layer, field, cropName);
       fieldLayers[field.id] = layer;
       bounds.extend(layer.getBounds());
     }
@@ -723,11 +983,44 @@ async function loadFields(){
   }
 }
 
+function attachFieldPopup(layer, field, cropName){
+  layer.on('click', async () => {
+    let html = `<div class="popup-title">${field.name}</div>`;
+    html += `<div class="popup-row">Uprawa: ${cropName}</div>`;
+    html += `<div class="popup-row">Powierzchnia: ${field.area_ha.toFixed(2)} ha</div>`;
+    if(field.sow_date){
+      html += `<div class="popup-row">Data siewu: ${field.sow_date}</div>`;
+    }
+    if(field.notes){
+      html += `<div class="popup-row">Uwagi: ${field.notes}</div>`;
+    }
+
+    const { data: treatments, error } = await supabaseClient
+      .from('treatments')
+      .select('date,type,treatment_fields(field_id)')
+      .order('date',{ascending:true});
+
+    if(!error && treatments){
+      const done = treatments.filter(t =>
+        (t.treatment_fields || []).some(tf => tf.field_id === field.id)
+      );
+      if(done.length){
+        html += `<div class="popup-row" style="margin-top:4px;"><strong>Zabiegi:</strong></div>`;
+        done.forEach(t=>{
+          html += `<div class="popup-row">• ${t.date} – ${t.type}</div>`;
+        });
+      }
+    }
+
+    layer.bindPopup(html).openPopup();
+  });
+}
+
 async function focusFieldOnMap(fieldId){
   const layer = fieldLayers[fieldId];
   if(!layer) return;
   map.fitBounds(layer.getBounds());
-  layer.openPopup();
+  layer.fire('click');
 }
 
 async function startEditField(fieldId){
@@ -744,6 +1037,7 @@ async function startEditField(fieldId){
   document.getElementById('fieldName').value = data.name || '';
   document.getElementById('fieldArea').value = data.area_ha || '';
   document.getElementById('fieldNotes').value = data.notes || '';
+  document.getElementById('fieldSowDate').value = data.sow_date || '';
   if(data.current_crop_id){
     document.getElementById('fieldCrop').value = data.current_crop_id;
   }
@@ -789,6 +1083,7 @@ async function deleteField(fieldId){
   await loadFields();
   await loadTreatmentFields();
   await loadSeasonSummary();
+  await updateStartMetrics();
 }
 
 async function saveField(){
@@ -796,6 +1091,7 @@ async function saveField(){
   const area = parseFloat(document.getElementById('fieldArea').value);
   const cropId = document.getElementById('fieldCrop').value || null;
   const notes = document.getElementById('fieldNotes').value.trim();
+  const sowDate = document.getElementById('fieldSowDate').value || null;
   const seasonYear = parseInt(document.getElementById('fieldSeasonYear').value || '0');
 
   if(!name){
@@ -812,7 +1108,8 @@ async function saveField(){
     area_ha: area,
     geometry: currentPolygonGeoJSON,
     current_crop_id: (cropId && !String(cropId).startsWith('extra_')) ? Number(cropId) : null,
-    notes
+    notes,
+    sow_date: sowDate
   };
 
   let error;
@@ -858,38 +1155,47 @@ async function saveField(){
   document.getElementById('fieldArea').value = '';
   document.getElementById('fieldCrop').value = '';
   document.getElementById('fieldNotes').value = '';
+  document.getElementById('fieldSowDate').value = '';
   drawnItems.clearLayers();
   currentPolygonGeoJSON = null;
 
   await loadFields();
   await loadTreatmentFields();
   await loadSeasonSummary();
+  await updateStartMetrics();
 }
 
-/* ZABiegi */
+/* ZABIEGI */
 
 async function loadTreatmentFields(){
-  const list = document.getElementById('treatFieldsList');
+  const body = document.getElementById('treatFieldsList');
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('id,name,area_ha')
-    .order('name', { ascending:true });
+    .select('id,name,area_ha,crops!fields_current_crop_id_fkey(name)')
+    .order('crops.name',{ascending:true})
+    .order('name',{ascending:true});
 
   if(error){
     console.log('Load treat fields error', error);
-    list.textContent = 'Błąd ładowania pól';
+    body.innerHTML = '<tr><td colspan="4">Błąd ładowania pól</td></tr>';
     return;
   }
   if(!data || data.length===0){
-    list.textContent = 'Brak pól – dodaj pola w zakładce Pola.';
+    body.innerHTML = '<tr><td colspan="4">Brak pól – dodaj pola w zakładce Pola.</td></tr>';
     return;
   }
 
-  list.innerHTML = '';
+  body.innerHTML = '';
   data.forEach(field=>{
-    const label = document.createElement('label');
-    label.innerHTML = `<input type="checkbox" value="${field.id}" data-area="${field.area_ha}"> ${field.name} (${field.area_ha.toFixed(2)} ha)`;
-    list.appendChild(label);
+    const cropName = field['crops']?.name || '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
+      <td>${cropName}</td>
+      <td>${field.name}</td>
+      <td>${field.area_ha.toFixed(2)}</td>
+    `;
+    body.appendChild(tr);
   });
 }
 
@@ -909,11 +1215,12 @@ async function loadWarehouseForTreatments(){
   selects.forEach(sel=>{
     sel.innerHTML = '<option value="">-- wybierz --</option>';
     (data || []).forEach(item=>{
-      const label = `${item.name} (${item.category}, ${item.qty} ${item.unit})`;
+      const label = `${item.name} (${item.category === 'plant_protection' ? 'ŚOR' : 'nawóz'}, ${item.qty} ${item.unit})`;
       const opt = document.createElement('option');
       opt.value = item.id;
       opt.textContent = label;
       opt.dataset.unit = item.unit;
+      opt.dataset.category = item.category;
       sel.appendChild(opt);
     });
   });
@@ -1191,6 +1498,7 @@ async function saveTreatment(){
   await loadWarehouseForTreatments();
   await loadWarehouseTables();
   await loadTreatmentsList();
+  await updateStartMetrics();
 }
 
 async function loadTreatmentsList(){
@@ -1225,10 +1533,13 @@ async function loadTreatmentsList(){
       return `${name}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
     }).join('; ');
     div.innerHTML = `
-      <div><strong>ID: ${t.id}</strong> – ${t.date} – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
+      <div><strong>${t.date}</strong> – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
       <div>Pola: ${fieldsNames}</div>
       <div>Środki: ${itemsText || '—'}</div>
       <div class="small">Notatka: ${t.note || '—'}</div>
+      <div id="undoStockWrapper_${t.id}">
+        <label><input type="checkbox" id="undoStock_${t.id}" checked> Przy usuwaniu przywróć ilości środków do magazynu</label>
+      </div>
       <button onclick="editTreatment(${t.id})">Edytuj</button>
       <button onclick="deleteTreatment(${t.id})">Usuń</button>
     `;
@@ -1313,7 +1624,6 @@ async function editTreatment(id){
       </tr>
     `;
   }
-
   if(extraBody.children.length === 0){
     extraBody.innerHTML = `
       <tr>
@@ -1342,7 +1652,36 @@ async function editTreatment(id){
 }
 
 async function deleteTreatment(id){
-  if(!confirm('Na pewno usunąć ten zabieg?')) return;
+  const undoCheckbox = document.getElementById(`undoStock_${id}`);
+  const restoreStock = undoCheckbox ? undoCheckbox.checked : false;
+
+  if(!confirm(restoreStock
+      ? 'Usunąć zabieg i przywrócić zużyte środki do magazynu?'
+      : 'Usunąć zabieg bez zmiany stanów magazynowych?')) return;
+
+  if(restoreStock){
+    const { data: items, error } = await supabaseClient
+      .from('treatment_items')
+      .select('warehouse_item_id,amount_used')
+      .eq('treatment_id', id);
+    if(!error && items){
+      for(const it of items.filter(i=>i.warehouse_item_id)){
+        const { data: wh, error: wErr } = await supabaseClient
+          .from('warehouse_items')
+          .select('qty')
+          .eq('id', it.warehouse_item_id)
+          .single();
+        if(wErr || !wh) continue;
+        const newQty = Number(wh.qty) + Number(it.amount_used);
+        await supabaseClient
+          .from('warehouse_items')
+          .update({ qty:newQty })
+          .eq('id', it.warehouse_item_id);
+      }
+      await loadWarehouseTables();
+      await loadWarehouseForTreatments();
+    }
+  }
 
   const { error: tfErr } = await supabaseClient
     .from('treatment_fields')
@@ -1371,8 +1710,9 @@ async function deleteTreatment(id){
     return;
   }
 
-  alert('Zabieg usunięty321');
+  alert('Zabieg usunięty');
   await loadTreatmentsList();
+  await updateStartMetrics();
 }
 
 document.addEventListener('input', e=>{
@@ -1516,126 +1856,101 @@ async function addFertilizer(){
   await loadWarehouseForTreatments();
 }
 
+async function loadWarehouseTables(){
+  const { data, error } = await supabaseClient
+    .from('warehouse_items')
+    .select('*')
+    .order('category',{ascending:true})
+    .order('name',{ascending:true});
+  if(error){
+    console.log('Warehouse load error', error);
+    return;
+  }
+
+  const ppBody = document.querySelector('#
+  const ppBody = document.querySelector('#ppTable tbody');
+  const fertBody = document.querySelector('#fertTable tbody');
+  const fuelInfo = document.getElementById('fuelInfo');
+
+  ppBody.innerHTML = '';
+  fertBody.innerHTML = '';
+  fuelInfo.textContent = '';
+
+  (data || []).forEach(item=>{
+    if(item.category === 'plant_protection'){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.qty} ${item.unit}</td>
+        <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
+      `;
+      ppBody.appendChild(tr);
+    }else if(item.category === 'fertilizer'){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.qty} ${item.unit}</td>
+        <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
+      `;
+      fertBody.appendChild(tr);
+    }else if(item.category === 'fuel' && item.name === 'Diesel'){
+      fuelInfo.textContent = `Aktualny stan paliwa: ${item.qty} ${item.unit}`;
+      document.getElementById('fuelQty').value = item.qty;
+    }
+  });
+}
+
 async function deleteWarehouseItem(id){
-  if(!confirm('Na pewno usunąć tę pozycję z magazynu?')) return;
+  if(!confirm('Usunąć pozycję z magazynu?')) return;
   const { error } = await supabaseClient
     .from('warehouse_items')
     .delete()
     .eq('id', id);
   if(error){
-    alert('Błąd usuwania z magazynu');
+    alert('Błąd usuwania pozycji');
     return;
   }
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
 }
 
-async function loadWarehouseTables(){
-  const { data, error } = await supabaseClient
-    .from('warehouse_items')
-    .select('*')
-    .order('name',{ascending:true});
-
-  if(error){
-    console.log('Warehouse load error', error);
-    return;
-  }
-
-  const fuelInfo = document.getElementById('fuelInfo');
-  const ppBody = document.querySelector('#ppTable tbody');
-  const fertBody = document.querySelector('#fertTable tbody');
-
-  fuelInfo.textContent='';
-  ppBody.innerHTML='';
-  fertBody.innerHTML='';
-
-  (data || []).forEach(item=>{
-    if(item.category==='fuel' && item.name==='Diesel'){
-      fuelInfo.textContent = `Aktualny stan: ${item.qty} ${item.unit}`;
-      document.getElementById('fuelQty').value = item.qty;
-    }
-    if(item.category==='plant_protection'){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${item.name}</td>
-        <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
-                   onchange="updateWarehouseQty(${item.id}, this.value)"></td>
-        <td>
-          <button onclick="deleteWarehouseItem(${item.id})">Usuń</button>
-          <span class="badge">${item.unit}</span>
-        </td>
-      `;
-      ppBody.appendChild(tr);
-    }
-    if(item.category==='fertilizer'){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${item.name}</td>
-        <td><input type="number" step="0.01" value="${item.qty}" style="width:80px"
-                   onchange="updateWarehouseQty(${item.id}, this.value)"></td>
-        <td>
-          <button onclick="deleteWarehouseItem(${item.id})">Usuń</button>
-          <span class="badge">${item.unit}</span>
-        </td>
-      `;
-      fertBody.appendChild(tr);
-    }
-  });
-}
-
-async function updateWarehouseQty(id, value){
-  const qty = parseFloat(value || '0');
-  const { error } = await supabaseClient
-    .from('warehouse_items')
-    .update({ qty })
-    .eq('id', id);
-  if(error){
-    console.log('Warehouse qty update error', error);
-    alert('Błąd aktualizacji ilości');
-  }
-}
-
-/* MASZYNY */
+/* MASZYNY I SERWIS */
 
 async function loadMachines(){
+  const box = document.getElementById('machinesList');
   const { data, error } = await supabaseClient
     .from('machines')
-    .select('*')
+    .select('id,name,odo,machine_type,filters_info')
     .order('name',{ascending:true});
-
   if(error){
     console.log('Machines load error', error);
-    document.getElementById('machinesList').textContent='Błąd ładowania maszyn';
+    box.textContent = 'Błąd ładowania maszyn';
     return;
   }
-
-  const list = document.getElementById('machinesList');
-  const select = document.getElementById('serviceMachineSelect');
-  list.innerHTML='';
-  select.innerHTML='<option value="">-- wybierz maszynę --</option>';
-
   if(!data || data.length===0){
-    list.textContent='Brak maszyn';
+    box.textContent = 'Brak maszyn – dodaj nową po lewej.';
     return;
   }
+
+  box.innerHTML = '';
+  const select = document.getElementById('serviceMachineSelect');
+  select.innerHTML = '<option value="">-- wybierz maszynę --</option>';
 
   data.forEach(m=>{
     const div = document.createElement('div');
-    div.style.borderBottom='1px solid #e5e7eb';
-    div.style.padding='4px 0';
+    div.style.borderBottom = '1px solid #e5e7eb';
+    div.style.padding = '4px 0';
     div.innerHTML = `
-      <strong>${m.name}</strong><br>
-      Typ: ${m.type || '—'}<br>
-      Przebieg: ${m.odometer ?? '—'}<br>
-      <span class="small">Filtry/części: ${m.filter_info || '—'}</span><br>
-      <button onclick="editMachine(${m.id})">Edytuj</button>
+      <div><strong>${m.name}</strong> (${m.machine_type}) – przebieg: ${m.odo ?? '-'} </div>
+      <div class="small">Filtry / części: ${m.filters_info || '—'}</div>
+      <button onclick="startEditMachine(${m.id})">Edytuj</button>
     `;
-    list.appendChild(div);
+    box.appendChild(div);
 
     const opt = document.createElement('option');
     opt.value = m.id;
     opt.textContent = m.name;
-    opt.dataset.type = m.type || 'maszyna';
+    opt.dataset.type = m.machine_type;
     select.appendChild(opt);
   });
 }
@@ -1643,37 +1958,42 @@ async function loadMachines(){
 async function saveMachine(){
   const name = document.getElementById('machineName').value.trim();
   const odo = parseFloat(document.getElementById('machineOdo').value || '0');
-  const filters = document.getElementById('machineFilters').value.trim();
   const type = document.getElementById('machineType').value;
-  if(!name){alert('Podaj nazwę maszyny');return;}
+  const filters = document.getElementById('machineFilters').value.trim();
 
+  if(!name){
+    alert('Podaj nazwę maszyny');
+    return;
+  }
+
+  const row = { name, odo, machine_type:type, filters_info:filters };
   let error;
   if(editingMachineId){
     ({ error } = await supabaseClient
       .from('machines')
-      .update({ name, odometer:odo, filter_info:filters, type })
+      .update(row)
       .eq('id', editingMachineId));
   }else{
     ({ error } = await supabaseClient
       .from('machines')
-      .insert([{ name, odometer:odo, filter_info:filters, type }]));
+      .insert([row]));
   }
 
   if(error){
-    console.log('Insert/Update machine error', error);
     alert('Błąd zapisu maszyny');
+    console.log('Machine save error', error);
     return;
   }
 
-  alert(editingMachineId ? 'Maszyna zaktualizowana' : 'Maszyna zapisana');
   editingMachineId = null;
   document.getElementById('machineName').value='';
   document.getElementById('machineOdo').value='';
   document.getElementById('machineFilters').value='';
+  document.getElementById('machineType').value='traktor';
   await loadMachines();
 }
 
-async function editMachine(id){
+async function startEditMachine(id){
   const { data, error } = await supabaseClient
     .from('machines')
     .select('*')
@@ -1685,130 +2005,145 @@ async function editMachine(id){
   }
   editingMachineId = id;
   document.getElementById('machineName').value = data.name || '';
-  document.getElementById('machineOdo').value = data.odometer || '';
-  document.getElementById('machineFilters').value = data.filter_info || '';
-  document.getElementById('machineType').value = data.type || 'maszyna';
-  alert('Tryb edycji maszyny – zmień dane i kliknij „Zapisz maszynę”.');
+  document.getElementById('machineOdo').value = data.odo || '';
+  document.getElementById('machineType').value = data.machine_type || 'traktor';
+  document.getElementById('machineFilters').value = data.filters_info || '';
 }
 
-function updateServiceCheckboxVisibility(){
-  const sel = document.getElementById('serviceMachineSelect');
-  const type = sel.options[sel.selectedIndex]?.dataset.type || 'maszyna';
-  document.getElementById('tractorService').style.display = (type==='traktor') ? 'block':'none';
-  document.getElementById('combineService').style.display = (type==='kombajn') ? 'block':'none';
-}
-
-document.getElementById('serviceMachineSelect').addEventListener('change', ()=>{
-  const id = document.getElementById('serviceMachineSelect').value;
-  updateServiceCheckboxVisibility();
-  if(id) loadServicesForMachine(Number(id));
+document.getElementById('serviceMachineSelect').addEventListener('change', async e=>{
+  const id = Number(e.target.value || '0');
+  const type = e.target.selectedOptions[0]?.dataset.type || 'maszyna';
+  document.getElementById('tractorService').style.display = type==='traktor' ? 'block' : 'none';
+  document.getElementById('combineService').style.display = type==='kombajn' ? 'block' : 'none';
+  const info = document.getElementById('machineServiceInfo');
+  if(type === 'maszyna'){
+    info.textContent = 'Dla typu „Maszyna” użyj pola „Opis czynności”.';
+  }else{
+    info.textContent = 'Zaznacz wykonane czynności, a niżej możesz dopisać szczegóły.';
+  }
+  await loadMachineServices(id);
 });
+
+function collectServiceChipsFromCheckboxes(type){
+  const chips = [];
+  if(type==='traktor'){
+    if(document.getElementById('tr_fltr_oil').checked) chips.push('Filtr oleju');
+    if(document.getElementById('tr_fltr_fuel').checked) chips.push('Filtr paliwa');
+    if(document.getElementById('tr_oil_engine').checked) chips.push('Olej silnikowy');
+    if(document.getElementById('tr_fltr_hyd_gear').checked) chips.push('Filtr hyd. skrzyni');
+    if(document.getElementById('tr_oil_hydraulic').checked) chips.push('Olej hydrauliczny');
+    if(document.getElementById('tr_oil_front_axle').checked) chips.push('Olej przedniego mostu');
+    if(document.getElementById('tr_oil_front_reduction').checked) chips.push('Olej zwolnic przednich');
+    if(document.getElementById('tr_fltr_cabin_in').checked) chips.push('Filtr kabinowy wewn.');
+    if(document.getElementById('tr_fltr_cabin_out').checked) chips.push('Filtr kabinowy zewn.');
+  }else if(type==='kombajn'){
+    if(document.getElementById('cb_fltr_oil').checked) chips.push('Filtr oleju');
+    if(document.getElementById('cb_fltr_fuel').checked) chips.push('Filtr paliwa');
+    if(document.getElementById('cb_oil_engine').checked) chips.push('Olej silnikowy');
+    if(document.getElementById('cb_fltr_hydraulic').checked) chips.push('Filtr hydrauliczny');
+    if(document.getElementById('cb_oil_hydraulic').checked) chips.push('Olej hydrauliczny');
+    if(document.getElementById('cb_fltr_cabin').checked) chips.push('Filtr kabinowy');
+  }
+  return chips;
+}
+
+function clearServiceCheckboxes(){
+  [
+    'tr_fltr_oil','tr_fltr_fuel','tr_oil_engine','tr_fltr_hyd_gear','tr_oil_hydraulic',
+    'tr_oil_front_axle','tr_oil_front_reduction','tr_fltr_cabin_in','tr_fltr_cabin_out',
+    'cb_fltr_oil','cb_fltr_fuel','cb_oil_engine','cb_fltr_hydraulic','cb_oil_hydraulic','cb_fltr_cabin'
+  ].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.checked = false;
+  });
+}
 
 async function saveService(){
   const machineSelect = document.getElementById('serviceMachineSelect');
-  const machineId = machineSelect.value;
-  const machineType = machineSelect.options[machineSelect.selectedIndex]?.dataset.type || 'maszyna';
+  const machineId = Number(machineSelect.value || '0');
+  if(!machineId){
+    alert('Wybierz maszynę');
+    return;
+  }
+  const type = machineSelect.selectedOptions[0]?.dataset.type || 'maszyna';
   const date = document.getElementById('serviceDate').value;
-  const serviceOdo = parseFloat(document.getElementById('serviceOdo').value || '0');
-  const noteBase = document.getElementById('serviceNote').value.trim();
+  const odo = parseFloat(document.getElementById('serviceOdo').value || '0');
+  const note = document.getElementById('serviceNote').value.trim();
 
-  if(!machineId){alert('Wybierz maszynę');return;}
-  if(!date){alert('Podaj datę serwisu');return;}
-
-  let tasksSummary = '';
-
-  if(machineType==='traktor'){
-    const tasks = [
-      ['Filtr oleju','tr_fltr_oil'],
-      ['Filtr paliwa','tr_fltr_fuel'],
-      ['Olej silnikowy','tr_oil_engine'],
-      ['Filtr hydrauliczny skrzyni','tr_fltr_hyd_gear'],
-      ['Olej hydrauliczny','tr_oil_hydraulic'],
-      ['Olej przedniego mostu','tr_oil_front_axle'],
-      ['Olej zwolnic przednich','tr_oil_front_reduction'],
-      ['Filtr kabinowy wewnętrzny','tr_fltr_cabin_in'],
-      ['Filtr kabinowy zewnętrzny','tr_fltr_cabin_out']
-    ];
-    tasksSummary = tasks.map(([label,id])=>{
-      const checked = document.getElementById(id).checked;
-      return `${label}: ${checked ? 'TAK':'NIE'}`;
-    }).join('; ');
-  }else if(machineType==='kombajn'){
-    const tasks = [
-      ['Filtr oleju','cb_fltr_oil'],
-      ['Filtr paliwa','cb_fltr_fuel'],
-      ['Olej silnikowy','cb_oil_engine'],
-      ['Filtr hydrauliczny','cb_fltr_hydraulic'],
-      ['Olej hydrauliczny','cb_oil_hydraulic'],
-      ['Filtr kabinowy','cb_fltr_cabin']
-    ];
-    tasksSummary = tasks.map(([label,id])=>{
-      const checked = document.getElementById(id).checked;
-      return `${label}: ${checked ? 'TAK':'NIE'}`;
-    }).join('; ');
-  }else{
-    tasksSummary = 'Maszyna – szczegóły w opisie czynności.';
+  if(!date){
+    alert('Podaj datę serwisu');
+    return;
   }
 
-  const fullNote = `Typ: ${machineType}; przebieg: ${isNaN(serviceOdo)?'brak':serviceOdo}; ${tasksSummary}; Opis: ${noteBase}`;
+  const chips = collectServiceChipsFromCheckboxes(type);
+  const fullNote = chips.length ? `[${chips.join(', ')}] ${note}` : note;
 
   const { error } = await supabaseClient
     .from('machine_services')
-    .insert([{ machine_id:Number(machineId), service_date:date, note:fullNote }]);
-
+    .insert([{ machine_id:machineId, service_date:date, odo_at_service:odo, note:fullNote }]);
   if(error){
-    console.log('Insert service error', error);
     alert('Błąd zapisu serwisu');
+    console.log('Service save error', error);
     return;
   }
 
-  if(!isNaN(serviceOdo) && serviceOdo > 0){
-    const { error: updErr } = await supabaseClient
-      .from('machines')
-      .update({ odometer: serviceOdo })
-      .eq('id', Number(machineId));
-    if(updErr){
-      console.log('Update machine odometer error', updErr);
-    }else{
-      await loadMachines();
-    }
-  }
-
-  alert('Serwis zapisany');
   document.getElementById('serviceDate').value='';
   document.getElementById('serviceOdo').value='';
   document.getElementById('serviceNote').value='';
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
-  await loadServicesForMachine(Number(machineId));
+  clearServiceCheckboxes();
+  await loadMachineServices(machineId);
 }
 
-async function loadServicesForMachine(machineId){
+async function loadMachineServices(machineId){
+  const box = document.getElementById('servicesList');
+  if(!machineId){
+    box.textContent = 'Wybierz maszynę, aby zobaczyć historię serwisów.';
+    return;
+  }
+
   const { data, error } = await supabaseClient
     .from('machine_services')
-    .select('*')
+    .select('id,service_date,odo_at_service,note')
     .eq('machine_id', machineId)
     .order('service_date',{ascending:false});
 
-  const box = document.getElementById('servicesList');
-
   if(error){
     console.log('Services load error', error);
-    box.textContent='Błąd ładowania serwisów';
+    box.textContent = 'Błąd ładowania serwisów';
     return;
   }
   if(!data || data.length===0){
-    box.textContent='Brak serwisów dla tej maszyny';
+    box.textContent = 'Brak zapisanych serwisów dla tej maszyny.';
     return;
   }
 
-  box.innerHTML='';
+  box.innerHTML = '';
   data.forEach(s=>{
     const div = document.createElement('div');
-    div.style.borderBottom='1px solid #e5e7eb';
-    div.style.padding='4px 0';
+    div.className = 'service-entry';
+    const chips = [];
+    const restNote = (s.note || '');
+    const match = restNote.match(/^\[(.+?)\]\s*(.*)$/);
+    let cleanNote = restNote;
+    if(match){
+      chips.push(...match[1].split(',').map(x=>x.trim()).filter(Boolean));
+      cleanNote = match[2] || '';
+    }
+
+    let chipsHtml = '';
+    if(chips.length){
+      chipsHtml = '<div class="service-chips">' +
+        chips.map(c=>`<span class="service-chip">${c}</span>`).join('') +
+        '</div>';
+    }
+
     div.innerHTML = `
-      <strong>${s.service_date}</strong><br>
-      <span class="small">Uwagi: ${s.note || '—'}</span>
+      <div class="service-entry-header">
+        <span><strong>${s.service_date}</strong> – przebieg: ${s.odo_at_service ?? '-'} </span>
+        <span class="small">ID: ${s.id}</span>
+      </div>
+      ${chipsHtml}
+      <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
     `;
     box.appendChild(div);
   });
@@ -1818,85 +2153,85 @@ async function loadServicesForMachine(machineId){
 
 async function loadSeasonSummary(){
   const year = parseInt(document.getElementById('seasonYearSelect').value || '0');
-  if(!year) return;
+  const box = document.getElementById('seasonSummary');
+  if(!year){
+    box.textContent = 'Podaj rok sezonu.';
+    return;
+  }
 
   const { data, error } = await supabaseClient
     .from('field_seasons')
-    .select('crop_name,area_ha,fields(name)')
+    .select('field_id,season_year,crop_name,area_ha,fields(name)')
     .eq('season_year', year);
 
-  const box = document.getElementById('seasonSummary');
   if(error){
-    console.log('Season load error', error);
-    box.textContent = 'Błąd ładowania sezonu';
+    console.log('Season summary error', error);
+    box.textContent = 'Błąd ładowania danych sezonu';
     return;
   }
   if(!data || data.length===0){
-    box.textContent = 'Brak danych dla tego roku. Przy zapisie pola podaj rok sezonu.';
-    if(seasonChart) seasonChart.destroy();
+    box.textContent = 'Brak danych dla tego roku.';
+    if(seasonChart){
+      seasonChart.destroy();
+      seasonChart = null;
+    }
     return;
   }
 
   const totals = {};
-  data.forEach(r=>{
-    const name = r.crop_name;
-    if(!totals[name]){
-      totals[name] = { area:0, fields:[] };
-    }
-    totals[name].area += Number(r.area_ha);
-    if(r.fields?.name){
-      totals[name].fields.push(r.fields.name);
-    }
+  data.forEach(row=>{
+    const crop = row.crop_name || '—';
+    if(!totals[crop]) totals[crop] = 0;
+    totals[crop] += Number(row.area_ha || 0);
   });
 
-  let html = `Sezon ${year}:<br>`;
-  Object.entries(totals).forEach(([name,obj])=>{
-    const color = getCropColor(name);
-    const fieldsList = obj.fields.length ? obj.fields.join(', ') : '—';
-    html += `<span style="color:${color};">■</span> ${name}: ${obj.area.toFixed(2)} ha (pola: ${fieldsList})<br>`;
+  let html = '<ul>';
+  Object.entries(totals).forEach(([crop,area])=>{
+    html += `<li>${crop}: ${area.toFixed(2)} ha</li>`;
   });
+  html += '</ul>';
   box.innerHTML = html;
 
-  const labels = Object.keys(totals);
-  const values = labels.map(n => Number(totals[n].area.toFixed(2)));
-  const barColors = labels.map(name => getCropColor(name));
-  const borderColors = barColors.map(c => c);
-
   const ctx = document.getElementById('seasonChart').getContext('2d');
+  const labels = Object.keys(totals);
+  const areas = Object.values(totals);
+  const colors = labels.map(c=>getCropColor(c));
+
   if(seasonChart) seasonChart.destroy();
   seasonChart = new Chart(ctx, {
-    type:'bar',
+    type:'pie',
     data:{
       labels,
       datasets:[{
-        label:`Powierzchnia [ha] – ${year}`,
-        data:values,
-        backgroundColor: barColors,
-        borderColor: borderColors,
-        borderWidth:1
+        data:areas,
+        backgroundColor:colors
       }]
     },
     options:{
-      responsive:true,
-      scales:{ y:{ beginAtZero:true } }
+      plugins:{
+        legend:{position:'bottom'}
+      }
     }
   });
 }
 
-/* START */
+/* INIT */
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async ()=>{
   initMap();
+  await ensureFuelRow();
   await loadCrops();
   await loadFields();
   await loadTreatmentFields();
-  await ensureFuelRow();
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
   await loadTreatmentsList();
   await loadMachines();
-  await loadSeasonSummary();
+  await updateStartMetrics();
+  await loadStartWeather();
+  updateStartClock();
+  setInterval(updateStartClock, 60000);
 });
 </script>
 </body>
-</html>
+</html>                                       
