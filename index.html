@@ -7,6 +7,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
@@ -268,27 +271,10 @@ button.primary:hover{background:#15803d}
   justify-content:space-between;
   font-size:12px;
 }
-.service-chips{
-  margin-top:4px;
-}
-.service-chip{
-  display:inline-block;
-  padding:2px 6px;
-  font-size:11px;
-  border-radius:999px;
-  margin:0 4px 4px 0;
-  background:#eef2ff;
-  border:1px solid #c7d2fe;
-}
 
 /* Popup field info */
-.popup-title{
-  font-weight:bold;
-}
-.popup-row{
-  font-size:12px;
-  margin-top:2px;
-}
+.popup-title{font-weight:bold;}
+.popup-row{font-size:12px;margin-top:2px;}
 
 /* Delete treatment dialog */
 #undoStockWrapper{
@@ -699,8 +685,73 @@ let editingMachineId = null;
 let editingTreatmentId = null;
 let seasonChart = null;
 
-const KURZNIE_LAT = 50.692;
-const KURZNIE_LON = 17.747;
+<script>
+const KURZNIE_LAT = 50.6920;
+const KURZNIE_LON = 17.7470;
+
+let map;
+let drawnItems;      // zawsze L.FeatureGroup
+let drawControl;
+
+function showTab(id){
+  document.querySelectorAll('.section').forEach(sec=>sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id === 'fields' && map){
+    setTimeout(()=>{ map.invalidateSize(); }, 50);
+  }
+}
+
+/* MAPA + RYSOWANIE POLA */
+
+function initMap(){
+  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
+
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    }
+  ).addTo(map);
+
+  // poprawione: zawsze L.FeatureGroup
+  drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+
+  drawControl = new L.Control.Draw({
+    position: 'topright',
+    edit: {
+      featureGroup: drawnItems
+    },
+    draw: {
+      polygon: true,
+      polyline: false,
+      circle: false,
+      rectangle: false,
+      marker: false,
+      circlemarker: false
+    }
+  });
+  map.addControl(drawControl);
+
+  map.on(L.Draw.Event.CREATED, function (e) {
+    drawnItems.clearLayers();
+    drawnItems.addLayer(e.layer);
+    updateFieldAreaFromLayer(e.layer);
+  });
+
+  map.on(L.Draw.Event.EDITED, function(e){
+    e.layers.eachLayer(layer=>{
+      updateFieldAreaFromLayer(layer);
+    });
+  });
+}
+
+function updateFieldAreaFromLayer(layer){
+  const geo = layer.toGeoJSON();
+  const areaHa = turf.area(geo) / 10000;
+  document.getElementById('fieldArea').value = areaHa.toFixed(2);
+}
 
 const CROP_COLORS = {
   'Pszenica ozima': '#facc15',
@@ -2055,6 +2106,8 @@ function clearServiceCheckboxes(){
   });
 }
 
+/* MASZYNY – SERWIS */
+
 let editingServiceId = null;
 
 async function saveService(){
@@ -2067,6 +2120,164 @@ async function saveService(){
     alert('Wybierz maszynę i datę serwisu');
     return;
   }
+
+  const chips = [];
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>{
+    if(cb.checked){
+      const label = cb.parentElement.textContent.trim();
+      chips.push(label);
+    }
+  });
+  const fullNote = chips.length ? (note ? note + ' | ' : '') + chips.join(', ') : note;
+
+  const odo = serviceOdo ? Number(serviceOdo) : null;
+  let errorSave = null;
+
+  if(editingServiceId){
+    const { error } = await supabaseClient
+      .from('machine_services')
+      .update({
+        service_date: date,
+        odometer_at_service: odo,
+        note: fullNote
+      })
+      .eq('id', editingServiceId);
+    errorSave = error;
+  }else{
+    const { error } = await supabaseClient
+      .from('machine_services')
+      .insert([{
+        machine_id: Number(machineId),
+        service_date: date,
+        odometer_at_service: odo,
+        note: fullNote
+      }]);
+    errorSave = error;
+  }
+
+  if(errorSave){
+    console.log('Service save error', errorSave);
+    alert('Błąd zapisu serwisu');
+    return;
+  }
+
+  if(odo){
+    const { error: updErr } = await supabaseClient
+      .from('machines')
+      .update({ odometer: odo })
+      .eq('id', Number(machineId));
+    if(updErr){
+      console.log('Update machine odometer error', updErr);
+    }else{
+      await loadMachines();
+    }
+  }
+
+  alert(editingServiceId ? 'Serwis zaktualizowany' : 'Serwis zapisany');
+
+  editingServiceId = null;
+  document.getElementById('serviceDate').value = '';
+  document.getElementById('serviceOdo').value = '';
+  document.getElementById('serviceNote').value = '';
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
+  document.getElementById('serviceCancelEditBtn').style.display = 'none';
+
+  await loadServicesForMachine(Number(machineId));
+}
+
+async function loadServicesForMachine(machineId){
+  const { data, error } = await supabaseClient
+    .from('machine_services')
+    .select('*')
+    .eq('machine_id', machineId)
+    .order('service_date',{ascending:false});
+
+  const box = document.getElementById('servicesList');
+
+  if(error){
+    console.log('Services load error', error);
+    box.textContent='Błąd ładowania serwisów';
+    return;
+  }
+  if(!data || data.length===0){
+    box.textContent='Brak serwisów dla tej maszyny';
+    return;
+  }
+
+  box.innerHTML='';
+  data.forEach(s=>{
+    const div = document.createElement('div');
+    div.className = 'service-entry';
+    div.innerHTML = `
+      <div class="service-entry-header">
+        <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '–'}</span>
+        <span>
+          <button onclick="editService(${s.id})">Edytuj</button>
+          <button onclick="deleteService(${s.id})">Usuń</button>
+        </span>
+      </div>
+      <div class="small">Uwagi: ${s.note || '—'}</div>
+    `;
+    box.appendChild(div);
+  });
+}
+
+async function editService(serviceId){
+  const { data, error } = await supabaseClient
+    .from('machine_services')
+    .select('*')
+    .eq('id', serviceId)
+    .single();
+
+  if(error || !data){
+    console.log('Edit service load error', error);
+    alert('Nie udało się wczytać serwisu do edycji');
+    return;
+  }
+
+  editingServiceId = serviceId;
+
+  document.getElementById('serviceMachineSelect').value = data.machine_id;
+  document.getElementById('serviceDate').value = data.service_date || '';
+  document.getElementById('serviceOdo').value = data.odometer_at_service ?? '';
+  document.getElementById('serviceNote').value = data.note || '';
+
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
+
+  document.getElementById('serviceSaveBtn').textContent = 'Zapisz zmiany';
+  document.getElementById('serviceCancelEditBtn').style.display = 'inline-block';
+}
+
+function cancelServiceEdit(){
+  editingServiceId = null;
+  document.getElementById('serviceDate').value = '';
+  document.getElementById('serviceOdo').value = '';
+  document.getElementById('serviceNote').value = '';
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
+  document.getElementById('serviceCancelEditBtn').style.display = 'none';
+}
+
+async function deleteService(serviceId){
+  if(!confirm('Na pewno usunąć ten serwis?')) return;
+
+  const { error } = await supabaseClient
+    .from('machine_services')
+    .delete()
+    .eq('id', serviceId);
+
+  if(error){
+    console.log('Delete service error', error);
+    alert('Błąd usuwania serwisu');
+    return;
+  }
+
+  const machineId = document.getElementById('serviceMachineSelect').value;
+  if(machineId){
+    await loadServicesForMachine(Number(machineId));
+  }
+}
 
   // budowa opisu z checkboxów
   const chips = [];
@@ -2329,14 +2540,12 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   await loadCrops();
   await loadFields();
   await loadTreatmentFields();
+  await ensureFuelRow();
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
   await loadTreatmentsList();
   await loadMachines();
-  await updateStartMetrics();
-  await loadStartWeather();
-  updateStartClock();
-  setInterval(updateStartClock, 60000);
+  await loadSeasonSummary();
 });
 </script>
 </body>
