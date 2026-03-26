@@ -804,10 +804,10 @@ function initMap(){
     { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
   ).addTo(map);
 
-  L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { maxZoom: 19, opacity:0.6, attribution: '&copy; OpenStreetMap' }
-  ).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
   drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
