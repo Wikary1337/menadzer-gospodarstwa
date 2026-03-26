@@ -2079,9 +2079,13 @@ async function saveService(){
   const chips = collectServiceChipsFromCheckboxes(type);
   const fullNote = chips.length ? `[${chips.join(', ')}] ${note}` : note;
 
-  const { error } = await supabaseClient
-    .from('machine_services')
-    .insert([{ machine_id:machineId, service_date:date, odo_at_service:odo, note:fullNote }]);
+ const { error } = await supabaseClient
+  .from('machine_services')
+  .insert([{
+    machine_id: machineId,
+    service_date: date,
+    odometer_at_service: odo,
+    note: fullNote}]);
   if(error){
     alert('Błąd zapisu serwisu');
     console.log('Service save error', error);
@@ -2102,11 +2106,11 @@ async function loadMachineServices(machineId){
     return;
   }
 
- const { data, error } = await supabaseClient
-   .from('machine_services')
-   .select('id,date,odo_at_service,note')
-   .eq('machine_id', machineId)
-   .order('date',{ascending:false});
+  const { data, error } = await supabaseClient
+  .from('machine_services')
+  .select('id,service_date,odometer_at_service,note')
+  .eq('machine_id', machineId)
+  .order('service_date',{ascending:false});
 
   if(error){
     console.log('Services load error', error);
@@ -2140,7 +2144,7 @@ async function loadMachineServices(machineId){
 
     div.innerHTML = `
       <div class="service-entry-header">
-       <span><strong>${s.date}</strong> – przebieg: ${s.odo_at_service ?? '-'} </span>
+       <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '-'} </span>
       </div>
       ${chipsHtml}
       <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
