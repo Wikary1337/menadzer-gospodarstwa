@@ -2186,12 +2186,6 @@ async function loadMachineServices(machineId){
  });
 }
 
-    let chipsHtml = '';
-    if(chips.length){
-      chipsHtml = '<div class="service-chips">' +
-        chips.map(c=>`<span class="service-chip">${c}</span>`).join('') +
-        '</div>';
-    }
 
     div.innerHTML = `
       <div class="service-entry-header">
