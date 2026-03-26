@@ -799,15 +799,13 @@ function showTab(id){
 function initMap(){
   map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
 
-  L.tileLayer(
+ L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {
     maxZoom: 19,
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
   }
 ).addTo(map);
-  drawnItems = new L.FeatureGroup();
-  map.addLayer(drawnItems);
 
   const drawControl = new L.Control.Draw({
     position: 'topleft',
