@@ -1225,7 +1225,7 @@ async function loadTreatmentsList(){
       return `${name}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
     }).join('; ');
     div.innerHTML = `
-      <div><strong>${t.date}</strong> – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
+      <div><strong>ID: ${t.id}</strong> – ${t.date} – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
       <div>Pola: ${fieldsNames}</div>
       <div>Środki: ${itemsText || '—'}</div>
       <div class="small">Notatka: ${t.note || '—'}</div>
