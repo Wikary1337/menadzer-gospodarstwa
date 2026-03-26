@@ -892,11 +892,73 @@ async function loadCrops(){
   }
 
   const wanted = [
-    'Pszenica ozima','Pszenica jara','Kukurydza','Kukurydza na kiszonke',
-    'Jęczmień ozimy','Jęczmień jary','Żyto ozime','Owies',
-    'Rzepak ozimy','Soja','Groch','Burak cukrowy',
-    'Ziemniaki','Łąka trwała','Lucerna wieloletnia'
+    // Zboża
+    'Pszenica ozima',
+    'Pszenica jara',
+    'Pszenżyto ozime',
+    'Pszenżyto jare',
+    'Jęczmień ozimy',
+    'Jęczmień jary',
+    'Żyto ozime',
+    'Żyto jare',
+    'Owies',
+    'Kukurydza na ziarno',
+    'Kukurydza na kiszonkę',
+    'Gryka',
+
+    // Oleiste
+    'Rzepak ozimy',
+    'Rzepak jary',
+    'Rzepik',
+    'Słonecznik',
+    'Len oleisty',
+    'Soja',
+
+    // Okopowe
+    'Ziemniaki',
+    'Burak cukrowy',
+    'Burak pastewny',
+    'Marchew pastewna',
+    'Rzepa ścierniskowa',
+    'Brukiew',
+
+    // Strączkowe / białkowe
+    'Groch',
+    'Groch siewny pastewny (peluszka)',
+    'Groch zwyczajny łuskowy',
+    'Groch zwyczajny cukrowy',
+    'Bobik',
+    'Łubin żółty',
+    'Łubin wąskolistny',
+    'Łubin biały',
+
+    // Pastewne / użytki zielone
+    'Łąka trwała',
+    'Lucerna wieloletnia',
+    'Lucerna',
+    'Koniczyna czerwona',
+    'Koniczyna biała',
+    'Mieszanka traw pastewnych',
+
+    // Warzywa polowe (zbiorczo – jak nie chcesz rozbijać)
+    'Warzywa kapustne',
+    'Warzywa korzeniowe',
+    'Warzywa liściowe',
+    'Warzywa cebulowe',
+    'Warzywa dyniowate',
+
+    // Sady / jagodowe (jeśli chcesz je też mieć na liście pól)
+    'Jabłonie',
+    'Grusze',
+    'Śliwy',
+    'Czereśnie',
+    'Wiśnie',
+    'Truskawki',
+    'Maliny',
+    'Porzeczki',
+    'Borówka wysoka'
   ];
+
   const filtered = [];
   wanted.forEach(name=>{
     const row = (data || []).find(c=>c.name===name);
@@ -912,7 +974,6 @@ async function loadCrops(){
     select.appendChild(opt);
   });
 }
-
 /* POLA */
 
 async function loadFields(){
