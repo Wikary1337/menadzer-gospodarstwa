@@ -2187,16 +2187,6 @@ async function loadMachineServices(machineId){
 }
 
 
-    div.innerHTML = `
-      <div class="service-entry-header">
-       <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '-'} </span>
-      </div>
-      ${chipsHtml}
-      <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
-    `;
-    box.appendChild(div);
-
-
   async function editService(serviceId){
   const { data, error } = await supabaseClient
     .from('machine_services')
