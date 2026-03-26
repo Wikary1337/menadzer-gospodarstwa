@@ -685,8 +685,8 @@ button.primary:hover{background:#15803d}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.js"></script>
-
 <script>
+  
 const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -922,7 +922,7 @@ async function loadFields(){
 
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('id,name,area_ha,current_crop_id,crops!fields_current_crop_id_fkey(name),geometry,notes,sow_date')
+    .select('id,name,area_ha,current_crop_id,geometry,notes')
     .order('id', { ascending: true });
 
   if(error){
@@ -945,14 +945,13 @@ async function loadFields(){
   data.forEach(field => {
     const div = document.createElement('div');
     div.className = 'field-item';
-    const cropName = field['crops']?.name || '—';
+    const cropName = '—';
     const color = getCropColor(cropName);
 
-    const sow = field.sow_date ? `, siew: ${field.sow_date}` : '';
     const notes = field.notes ? `, uwagi: ${field.notes}` : '';
 
     div.innerHTML = `
-      <strong style="color:${color}">${field.name}</strong> – ${field.area_ha.toFixed(2)} ha, uprawa: ${cropName}${sow}${notes}
+      <strong style="color:${color}">${field.name}</strong> – ${Number(field.area_ha).toFixed(2)} ha, uprawa: ${cropName}${notes}
       <div class="field-actions">
         <button onclick="startEditField(${field.id});event.stopPropagation();">Edytuj</button>
         <button onclick="deleteField(${field.id});event.stopPropagation();">Usuń</button>
@@ -987,28 +986,29 @@ function attachFieldPopup(layer, field, cropName){
   layer.on('click', async () => {
     let html = `<div class="popup-title">${field.name}</div>`;
     html += `<div class="popup-row">Uprawa: ${cropName}</div>`;
-    html += `<div class="popup-row">Powierzchnia: ${field.area_ha.toFixed(2)} ha</div>`;
-    if(field.sow_date){
-      html += `<div class="popup-row">Data siewu: ${field.sow_date}</div>`;
-    }
+    html += `<div class="popup-row">Powierzchnia: ${Number(field.area_ha).toFixed(2)} ha</div>`;
     if(field.notes){
       html += `<div class="popup-row">Uwagi: ${field.notes}</div>`;
     }
 
     const { data: treatments, error } = await supabaseClient
       .from('treatments')
-      .select('date,type,treatment_fields(field_id)')
-      .order('date',{ascending:true});
+      .select('id,date,type');
 
     if(!error && treatments){
-      const done = treatments.filter(t =>
-        (t.treatment_fields || []).some(tf => tf.field_id === field.id)
-      );
-      if(done.length){
-        html += `<div class="popup-row" style="margin-top:4px;"><strong>Zabiegi:</strong></div>`;
-        done.forEach(t=>{
-          html += `<div class="popup-row">• ${t.date} – ${t.type}</div>`;
-        });
+      const { data: tf, error: tfErr } = await supabaseClient
+        .from('treatment_fields')
+        .select('treatment_id,field_id')
+        .eq('field_id', field.id);
+      if(!tfErr && tf && tf.length){
+        const ids = tf.map(x=>x.treatment_id);
+        const done = treatments.filter(t=>ids.includes(t.id));
+        if(done.length){
+          html += `<div class="popup-row" style="margin-top:4px;"><strong>Zabiegi:</strong></div>`;
+          done.forEach(t=>{
+            html += `<div class="popup-row">• ${t.date} – ${t.type}</div>`;
+          });
+        }
       }
     }
 
@@ -1037,7 +1037,7 @@ async function startEditField(fieldId){
   document.getElementById('fieldName').value = data.name || '';
   document.getElementById('fieldArea').value = data.area_ha || '';
   document.getElementById('fieldNotes').value = data.notes || '';
-  document.getElementById('fieldSowDate').value = data.sow_date || '';
+
   if(data.current_crop_id){
     document.getElementById('fieldCrop').value = data.current_crop_id;
   }
@@ -1091,7 +1091,6 @@ async function saveField(){
   const area = parseFloat(document.getElementById('fieldArea').value);
   const cropId = document.getElementById('fieldCrop').value || null;
   const notes = document.getElementById('fieldNotes').value.trim();
-  const sowDate = document.getElementById('fieldSowDate').value || null;
   const seasonYear = parseInt(document.getElementById('fieldSeasonYear').value || '0');
 
   if(!name){
@@ -1107,9 +1106,8 @@ async function saveField(){
     name,
     area_ha: area,
     geometry: currentPolygonGeoJSON,
-    current_crop_id: (cropId && !String(cropId).startsWith('extra_')) ? Number(cropId) : null,
-    notes,
-    sow_date: sowDate
+    current_crop_id: cropId ? Number(cropId) : null,
+    notes
   };
 
   let error;
@@ -1155,7 +1153,6 @@ async function saveField(){
   document.getElementById('fieldArea').value = '';
   document.getElementById('fieldCrop').value = '';
   document.getElementById('fieldNotes').value = '';
-  document.getElementById('fieldSowDate').value = '';
   drawnItems.clearLayers();
   currentPolygonGeoJSON = null;
 
@@ -1171,8 +1168,7 @@ async function loadTreatmentFields(){
   const body = document.getElementById('treatFieldsList');
   const { data, error } = await supabaseClient
     .from('fields')
-    .select('id,name,area_ha,crops!fields_current_crop_id_fkey(name)')
-    .order('crops.name',{ascending:true})
+    .select('id,name,area_ha')
     .order('name',{ascending:true});
 
   if(error){
@@ -1187,13 +1183,13 @@ async function loadTreatmentFields(){
 
   body.innerHTML = '';
   data.forEach(field=>{
-    const cropName = field['crops']?.name || '—';
+    const cropName = '—';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
       <td>${cropName}</td>
       <td>${field.name}</td>
-      <td>${field.area_ha.toFixed(2)}</td>
+      <td>${Number(field.area_ha).toFixed(2)}</td>
     `;
     body.appendChild(tr);
   });
@@ -1505,7 +1501,7 @@ async function loadTreatmentsList(){
   const box = document.getElementById('treatmentsList');
   const { data, error } = await supabaseClient
     .from('treatments')
-    .select('id,date,type,note,temperature_c,treatment_fields(field_id,fields(name)),treatment_items(amount_used,dose_per_ha,extra_name,extra_unit,warehouse_items(name,unit))')
+    .select('id,date,type,note,temperature_c')
     .order('date',{ascending:false});
 
   if(error){
@@ -1519,23 +1515,37 @@ async function loadTreatmentsList(){
   }
 
   box.innerHTML = '';
-  data.forEach(t=>{
+  for(const t of data){
+    const { data: tf, error: tfErr } = await supabaseClient
+      .from('treatment_fields')
+      .select('field_id,fields(name)')
+      .eq('treatment_id', t.id);
+    const fieldsNames = !tfErr && tf ? tf.map(x=>x.fields?.name).filter(Boolean).join(', ') : '—';
+
+    const { data: items, error: itErr } = await supabaseClient
+      .from('treatment_items')
+      .select('amount_used,dose_per_ha,extra_name,extra_unit,warehouse_item_id,warehouse_items(name,unit)')
+      .eq('treatment_id', t.id);
+
+    let itemsText = '—';
+    if(!itErr && items){
+      itemsText = items.map(it=>{
+        const fromWarehouse = it.warehouse_items?.name;
+        const name = fromWarehouse || it.extra_name || '—';
+        const unit = fromWarehouse ? (it.warehouse_items?.unit || '') : (it.extra_unit || '');
+        const amt = it.amount_used;
+        const dose = it.dose_per_ha;
+        return `${name}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
+      }).join('; ') || '—';
+    }
+
     const div = document.createElement('div');
     div.style.borderBottom = '1px solid #e5e7eb';
     div.style.padding = '4px 0';
-    const fieldsNames = (t.treatment_fields || []).map(tf=>tf.fields?.name).filter(Boolean).join(', ') || '—';
-    const itemsText = (t.treatment_items || []).map(it=>{
-      const fromWarehouse = it.warehouse_items?.name;
-      const name = fromWarehouse || it.extra_name || '—';
-      const unit = fromWarehouse ? (it.warehouse_items?.unit || '') : (it.extra_unit || '');
-      const amt = it.amount_used;
-      const dose = it.dose_per_ha;
-      return `${name}: ${amt} ${unit}` + (dose ? ` (${dose.toFixed(2)} /ha)` : '');
-    }).join('; ');
     div.innerHTML = `
       <div><strong>${t.date}</strong> – ${t.type} (temp: ${t.temperature_c ?? 'brak'} °C)</div>
       <div>Pola: ${fieldsNames}</div>
-      <div>Środki: ${itemsText || '—'}</div>
+      <div>Środki: ${itemsText}</div>
       <div class="small">Notatka: ${t.note || '—'}</div>
       <div id="undoStockWrapper_${t.id}">
         <label><input type="checkbox" id="undoStock_${t.id}" checked> Przy usuwaniu przywróć ilości środków do magazynu</label>
@@ -1544,7 +1554,7 @@ async function loadTreatmentsList(){
       <button onclick="deleteTreatment(${t.id})">Usuń</button>
     `;
     box.appendChild(div);
-  });
+  }
 }
 
 async function editTreatment(id){
@@ -1683,21 +1693,15 @@ async function deleteTreatment(id){
     }
   }
 
-  const { error: tfErr } = await supabaseClient
+  await supabaseClient
     .from('treatment_fields')
     .delete()
     .eq('treatment_id', id);
-  if(tfErr){
-    console.log('Error deleting treatment_fields', tfErr);
-  }
 
-  const { error: tiErr } = await supabaseClient
+  await supabaseClient
     .from('treatment_items')
     .delete()
     .eq('treatment_id', id);
-  if(tiErr){
-    console.log('Error deleting treatment_items', tiErr);
-  }
 
   const { error } = await supabaseClient
     .from('treatments')
@@ -1802,10 +1806,9 @@ async function addPlantProtection(){
   if(error){console.log('PP select error', error);return;}
 
   if(data){
-    const newQty = qty;
     const { error: updErr } = await supabaseClient
       .from('warehouse_items')
-      .update({ qty:newQty })
+      .update({ qty })
       .eq('id', data.id);
     if(updErr) console.log('PP update error', updErr);
   }else{
@@ -1837,10 +1840,9 @@ async function addFertilizer(){
   if(error){console.log('Fert select error', error);return;}
 
   if(data){
-    const newQty = qty;
     const { error: updErr } = await supabaseClient
       .from('warehouse_items')
-      .update({ qty:newQty })
+      .update({ qty })
       .eq('id', data.id);
     if(updErr) console.log('Fert update error', updErr);
   }else{
@@ -1911,15 +1913,15 @@ async function deleteWarehouseItem(id){
   }
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
-}
-
-/* MASZYNY I SERWIS */
+}  
+  
+  /* MASZYNY I SERWIS */
 
 async function loadMachines(){
   const box = document.getElementById('machinesList');
   const { data, error } = await supabaseClient
     .from('machines')
-    .select('id,name,odo,machine_type,filters_info')
+    .select('*')
     .order('name',{ascending:true});
   if(error){
     console.log('Machines load error', error);
@@ -1940,8 +1942,8 @@ async function loadMachines(){
     div.style.borderBottom = '1px solid #e5e7eb';
     div.style.padding = '4px 0';
     div.innerHTML = `
-      <div><strong>${m.name}</strong> (${m.machine_type}) – przebieg: ${m.odo ?? '-'} </div>
-      <div class="small">Filtry / części: ${m.filters_info || '—'}</div>
+      <div><strong>${m.name}</strong> (${m.type || '-'}) – przebieg: ${m.odometer ?? '-'} </div>
+      <div class="small">Filtry / części: ${m.filter_info || '—'}</div>
       <button onclick="startEditMachine(${m.id})">Edytuj</button>
     `;
     box.appendChild(div);
@@ -1949,7 +1951,7 @@ async function loadMachines(){
     const opt = document.createElement('option');
     opt.value = m.id;
     opt.textContent = m.name;
-    opt.dataset.type = m.machine_type;
+    opt.dataset.type = m.type || 'maszyna';
     select.appendChild(opt);
   });
 }
@@ -1965,7 +1967,7 @@ async function saveMachine(){
     return;
   }
 
-  const row = { name, odo, machine_type:type, filters_info:filters };
+  const row = { name, odometer:odo, type, filter_info:filters };
   let error;
   if(editingMachineId){
     ({ error } = await supabaseClient
@@ -2004,9 +2006,9 @@ async function startEditMachine(id){
   }
   editingMachineId = id;
   document.getElementById('machineName').value = data.name || '';
-  document.getElementById('machineOdo').value = data.odo || '';
-  document.getElementById('machineType').value = data.machine_type || 'traktor';
-  document.getElementById('machineFilters').value = data.filters_info || '';
+  document.getElementById('machineOdo').value = data.odometer || '';
+  document.getElementById('machineType').value = data.type || 'traktor';
+  document.getElementById('machineFilters').value = data.filter_info || '';
 }
 
 document.getElementById('serviceMachineSelect').addEventListener('change', async e=>{
@@ -2160,7 +2162,7 @@ async function loadSeasonSummary(){
 
   const { data, error } = await supabaseClient
     .from('field_seasons')
-    .select('field_id,season_year,crop_name,area_ha,fields(name)')
+    .select('field_id,season_year,crop_name,area_ha')
     .eq('season_year', year);
 
   if(error){
@@ -2233,4 +2235,4 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 });
 </script>
 </body>
-</html>                                       
+</html>
