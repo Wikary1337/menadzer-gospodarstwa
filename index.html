@@ -657,7 +657,8 @@ button.primary:hover{background:#15803d}
           </div>
         </div>
 
-        <button class="primary" onclick="saveService()">Zapisz serwis</button>
+        <button class="primary" id="serviceSaveBtn" onclick="saveService()">Zapisz serwis</button>
+        <button class="primary" id="serviceCancelEditBtn" style="display:none;" onclick="cancelServiceEdit()">Anuluj edycję</button>
         <div id="servicesList" class="small" style="margin-top:10px;">Wybierz maszynę, aby zobaczyć historię serwisów.</div>
       </div>
     </div>
@@ -799,18 +800,13 @@ function showTab(id){
 function initMap(){
   map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
 
-  L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
-  ).addTo(map);
-
-  L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { maxZoom: 19, opacity:0.6, attribution: '&copy; OpenStreetMap' }
-  ).addTo(map);
-
-  drawnItems = new L.FeatureGroup();
-  map.addLayer(drawnItems);
+ L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {
+    maxZoom: 19,
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+  }
+).addTo(map);
 
   const drawControl = new L.Control.Draw({
     position: 'topleft',
@@ -2059,40 +2055,87 @@ function clearServiceCheckboxes(){
   });
 }
 
+let editingServiceId = null;
+
 async function saveService(){
-  const machineSelect = document.getElementById('serviceMachineSelect');
-  const machineId = Number(machineSelect.value || '0');
-  if(!machineId){
-    alert('Wybierz maszynę');
-    return;
-  }
-  const type = machineSelect.selectedOptions[0]?.dataset.type || 'maszyna';
+  const machineId = document.getElementById('serviceMachineSelect').value;
   const date = document.getElementById('serviceDate').value;
-  const odo = parseFloat(document.getElementById('serviceOdo').value || '0');
+  const serviceOdo = document.getElementById('serviceOdo').value;
   const note = document.getElementById('serviceNote').value.trim();
 
-  if(!date){
-    alert('Podaj datę serwisu');
+  if(!machineId || !date){
+    alert('Wybierz maszynę i datę serwisu');
     return;
   }
 
-  const chips = collectServiceChipsFromCheckboxes(type);
-  const fullNote = chips.length ? `[${chips.join(', ')}] ${note}` : note;
+  // budowa opisu z checkboxów
+  const chips = [];
+  const checks = document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]');
+  checks.forEach(cb=>{
+    if(cb.checked){
+      const label = cb.parentElement.textContent.trim();
+      chips.push(label);
+    }
+  });
+  const fullNote = chips.length ? `${note ? note + ' | ' : ''}${chips.join(', ')}` : note;
 
-  const { error } = await supabaseClient
-    .from('machine_services')
-    .insert([{ machine_id:machineId, service_date:date, odo_at_service:odo, note:fullNote }]);
-  if(error){
+  const odo = serviceOdo ? Number(serviceOdo) : null;
+
+  let errorSave = null;
+
+  if(editingServiceId){
+    const { error } = await supabaseClient
+      .from('machine_services')
+      .update({
+        service_date: date,
+        odometer_at_service: odo,
+        note: fullNote
+      })
+      .eq('id', editingServiceId);
+    errorSave = error;
+  }else{
+    const { error } = await supabaseClient
+      .from('machine_services')
+      .insert([{
+        machine_id: Number(machineId),
+        service_date: date,
+        odometer_at_service: odo,
+        note: fullNote
+      }]);
+    errorSave = error;
+  }
+
+  if(errorSave){
+    console.log('Service save error', errorSave);
     alert('Błąd zapisu serwisu');
-    console.log('Service save error', error);
     return;
   }
 
-  document.getElementById('serviceDate').value='';
-  document.getElementById('serviceOdo').value='';
-  document.getElementById('serviceNote').value='';
-  clearServiceCheckboxes();
-  await loadMachineServices(machineId);
+  // aktualizacja licznika maszyny
+  if(odo){
+    const { error: updErr } = await supabaseClient
+      .from('machines')
+      .update({ odometer: odo })
+      .eq('id', Number(machineId));
+    if(updErr){
+      console.log('Update machine odometer error', updErr);
+    }else{
+      await loadMachines();
+    }
+  }
+
+  alert(editingServiceId ? 'Serwis zaktualizowany' : 'Serwis zapisany');
+
+  editingServiceId = null;
+  document.getElementById('serviceDate').value = '';
+  document.getElementById('serviceOdo').value = '';
+  document.getElementById('serviceNote').value = '';
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
+
+  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
+  document.getElementById('serviceCancelEditBtn').style.display = 'none';
+
+  await loadServicesForMachine(Number(machineId));
 }
 
 async function loadMachineServices(machineId){
@@ -2103,10 +2146,10 @@ async function loadMachineServices(machineId){
   }
 
   const { data, error } = await supabaseClient
-    .from('machine_services')
-    .select('id,service_date,odo_at_service,note')
-    .eq('machine_id', machineId)
-    .order('service_date',{ascending:false});
+  .from('machine_services')
+  .select('id,service_date,odometer_at_service,note')
+  .eq('machine_id', machineId)
+  .order('service_date',{ascending:false});
 
   if(error){
     console.log('Services load error', error);
@@ -2118,18 +2161,23 @@ async function loadMachineServices(machineId){
     return;
   }
 
-  box.innerHTML = '';
+  box.innerHTML='';
   data.forEach(s=>{
     const div = document.createElement('div');
     div.className = 'service-entry';
-    const chips = [];
-    const restNote = (s.note || '');
-    const match = restNote.match(/^\[(.+?)\]\s*(.*)$/);
-    let cleanNote = restNote;
-    if(match){
-      chips.push(...match[1].split(',').map(x=>x.trim()).filter(Boolean));
-      cleanNote = match[2] || '';
-    }
+    div.innerHTML = `
+      <div class="service-entry-header">
+        <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '–'}</span>
+        <span>
+          <button onclick="editService(${s.id})">Edytuj</button>
+          <button onclick="deleteService(${s.id})">Usuń</button>
+        </span>
+      </div>
+      <div class="small">Uwagi: ${s.note || '—'}</div>
+    `;
+    box.appendChild(div);
+ });
+}
 
     let chipsHtml = '';
     if(chips.length){
@@ -2140,8 +2188,7 @@ async function loadMachineServices(machineId){
 
     div.innerHTML = `
       <div class="service-entry-header">
-        <span><strong>${s.service_date}</strong> – przebieg: ${s.odo_at_service ?? '-'} </span>
-        <span class="small">ID: ${s.id}</span>
+       <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '-'} </span>
       </div>
       ${chipsHtml}
       <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
@@ -2150,6 +2197,64 @@ async function loadMachineServices(machineId){
   });
 }
 
+  async function editService(serviceId){
+  const { data, error } = await supabaseClient
+    .from('machine_services')
+    .select('*')
+    .eq('id', serviceId)
+    .single();
+
+  if(error || !data){
+    console.log('Edit service load error', error);
+    alert('Nie udało się wczytać serwisu do edycji');
+    return;
+  }
+
+  editingServiceId = serviceId;
+
+  document.getElementById('serviceMachineSelect').value = data.machine_id;
+  document.getElementById('serviceDate').value = data.service_date || '';
+  document.getElementById('serviceOdo').value = data.odometer_at_service ?? '';
+  document.getElementById('serviceNote').value = data.note || '';
+
+  // wyczyszczenie checkboxów – nie odtwarzamy ich z notatki (za dużo parsowania)
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
+
+  document.getElementById('serviceSaveBtn').textContent = 'Zapisz zmiany';
+  document.getElementById('serviceCancelEditBtn').style.display = 'inline-block';
+
+  await loadServicesForMachine(Number(data.machine_id));
+}
+
+function cancelServiceEdit(){
+  editingServiceId = null;
+  document.getElementById('serviceDate').value = '';
+  document.getElementById('serviceOdo').value = '';
+  document.getElementById('serviceNote').value = '';
+  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
+  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
+  document.getElementById('serviceCancelEditBtn').style.display = 'none';
+}
+
+async function deleteService(serviceId){
+  if(!confirm('Na pewno usunąć ten serwis?')) return;
+
+  const { error } = await supabaseClient
+    .from('machine_services')
+    .delete()
+    .eq('id', serviceId);
+
+  if(error){
+    console.log('Delete service error', error);
+    alert('Błąd usuwania serwisu');
+    return;
+  }
+
+  const machineId = document.getElementById('serviceMachineSelect').value;
+  if(machineId){
+    await loadServicesForMachine(Number(machineId));
+  }
+}
 /* SEZONY */
 
 async function loadSeasonSummary(){
