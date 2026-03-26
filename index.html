@@ -1067,6 +1067,24 @@ async function loadFields(){
   }
 }
 
+  function getCropNameById(id){
+  if(!id) return 'brak uprawy';
+  return cropsById[id] || id; // jak extra_..., to chociaż pokaże tekst
+}
+
+// przykład w Leaflet:
+function addFieldPolygon(field){
+  const polygon = L.polygon(field.geometry, {
+    color: '#3388ff'
+  }).addTo(fieldsLayerGroup);
+
+  const cropName = getCropNameById(field.current_crop_id);
+
+  polygon.bindPopup(
+    `<b>${field.name}</b><br>` +
+    `Uprawa: ${cropName || 'brak'}<br>` +
+    `Powierzchnia: ${field.area_ha || '-'} ha`
+ 
 function attachFieldPopup(layer, field, cropName){
   layer.on('click', async () => {
     let html = `<div class="popup-title">${field.name}</div>`;
