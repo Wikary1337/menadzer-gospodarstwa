@@ -7,10 +7,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
@@ -31,115 +27,274 @@ body{
   box-shadow:0 20px 40px rgba(15,23,42,0.35);
   border:1px solid #1f2937;
 }
-h1{margin-bottom:4px;font-size:26px;}
-.app-subtitle{font-size:13px;color:#6b7280;margin-bottom:12px;}
-.tabs{margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;}
-.tabs button{
-  padding:6px 12px;border:none;border-radius:999px;
-  background:#e5e7eb;cursor:pointer;font-size:13px;
+h1{
+  margin-bottom:4px;
+  font-size:26px;
 }
-.tabs button.active{background:#2563eb;color:#fff;}
+.app-subtitle{
+  font-size:13px;
+  color:#6b7280;
+  margin-bottom:12px;
+}
+.tabs{
+  margin-bottom:12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.tabs button{
+  padding:6px 12px;
+  border:none;
+  border-radius:999px;
+  background:#e5e7eb;
+  cursor:pointer;
+  font-size:13px;
+}
+.tabs button.active{
+  background:#2563eb;
+  color:#fff;
+}
 .section{display:none}
 .section.active{display:block}
 
 #map{
-  width:100%;height:460px;border:1px solid #e5e7eb;
-  border-radius:10px;margin-top:8px;
+  width:100%;
+  height:460px;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  margin-top:8px;
 }
 
-.form-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
-.form-row label{font-size:13px;}
-.form-row input,.form-row select,.form-row textarea{
-  padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;
-  min-width:180px;font-size:13px;background:#ffffff;
+.form-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:10px;
+}
+.form-row label{
+  font-size:13px;
+}
+.form-row input, .form-row select, .form-row textarea{
+  padding:6px 8px;
+  border:1px solid #d1d5db;
+  border-radius:6px;
+  min-width:180px;
+  font-size:13px;
+  background:#ffffff;
 }
 button.primary{
-  background:#16a34a;color:#fff;border:none;padding:8px 14px;
-  border-radius:999px;cursor:pointer;margin-top:10px;font-size:13px;
+  background:#16a34a;
+  color:#fff;
+  border:none;
+  padding:8px 14px;
+  border-radius:999px;
+  cursor:pointer;
+  margin-top:10px;
+  font-size:13px;
 }
 button.primary:hover{background:#15803d}
 .small{font-size:12px;color:#6b7280}
 #fieldsContainer .field-item{
-  padding:6px 0;border-bottom:1px solid #e5e7eb;cursor:pointer;
+  padding:6px 0;
+  border-bottom:1px solid #e5e7eb;
+  cursor:pointer;
 }
 #fieldsContainer .field-item:hover{background:#f3f4f6}
 
-.table{width:100%;border-collapse:collapse;margin-top:8px;}
+.table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:8px;
+}
 .table th,.table td{
-  border:1px solid #e5e7eb;padding:4px 6px;font-size:13px;
+  border:1px solid #e5e7eb;
+  padding:4px 6px;
+  font-size:13px;
 }
 .table th{background:#e5e7eb;text-align:left}
 
-.badge{display:inline-block;padding:2px 6px;border-radius:4px;
-  font-size:11px;background:#e5e7eb;}
-.columns{display:flex;flex-wrap:wrap;gap:16px;}
-.col{flex:1 1 260px;}
+.badge{
+  display:inline-block;
+  padding:2px 6px;
+  border-radius:4px;
+  font-size:11px;
+  background:#e5e7eb;
+}
+.columns{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+}
+.col{
+  flex:1 1 260px;
+}
 .checkbox-list{
-  max-height:200px;overflow:auto;border:1px solid #e5e7eb;
-  border-radius:6px;background:#ffffff;
+  max-height:200px;
+  overflow:auto;
+  border:1px solid #e5e7eb;
+  border-radius:6px;
+  background:#ffffff;
 }
 
-#mapSearchRow{display:flex;gap:8px;margin-top:6px;align-items:center;}
-#mapSearchInput{
-  flex:1;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;
+#mapSearchRow{
+  display:flex;
+  gap:8px;
+  margin-top:6px;
+  align-items:center;
 }
-.field-actions{margin-top:4px;}
-.field-actions button{margin-right:4px;padding:2px 6px;font-size:11px;}
+#mapSearchInput{
+  flex:1;
+  padding:6px 8px;
+  border:1px solid #d1d5db;
+  border-radius:6px;
+}
+.field-actions{
+  margin-top:4px;
+}
+.field-actions button{
+  margin-right:4px;
+  padding:2px 6px;
+  font-size:11px;
+}
 
 .service-group{
-  border:1px solid #e5e7eb;border-radius:6px;padding:6px;
-  margin-top:6px;background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:6px;
+  padding:6px;
+  margin-top:6px;
+  background:#f9fafb;
 }
-.service-group h4{margin:0 0 4px 0;font-size:13px;}
-.service-group label{display:block;font-size:12px;}
-#seasonsChartWrapper{max-width:600px;margin-top:12px;}
+.service-group h4{
+  margin:0 0 4px 0;
+  font-size:13px;
+}
+.service-group label{
+  display:block;
+  font-size:12px;
+}
+#seasonsChartWrapper{
+  max-width:600px;
+  margin-top:12px;
+}
 
 /* START PAGE */
-#start{display:flex;flex-direction:column;gap:16px;}
+#start{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
 .start-hero{
-  display:flex;flex-wrap:wrap;justify-content:space-between;
-  gap:16px;align-items:flex-start;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
 }
-.start-left{flex:2 1 260px;}
+.start-left{
+  flex:2 1 260px;
+}
 .start-right{
-  flex:1 1 220px;border-radius:12px;padding:10px;
-  background:linear-gradient(135deg,#1d4ed8,#22c55e);color:#e5e7eb;
+  flex:1 1 220px;
+  border-radius:12px;
+  padding:10px;
+  background:linear-gradient(135deg,#1d4ed8,#22c55e);
+  color:#e5e7eb;
 }
-.start-right h3{margin-bottom:4px;}
-.start-metrics{display:flex;flex-wrap:wrap;gap:10px;}
+.start-right h3{
+  margin-bottom:4px;
+}
+.start-metrics{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
 .metric-card{
-  flex:1 1 160px;border-radius:10px;padding:8px;
-  background:#ffffff;border:1px solid #e5e7eb;
+  flex:1 1 160px;
+  border-radius:10px;
+  padding:8px;
+  background:#ffffff;
+  border:1px solid #e5e7eb;
 }
-.metric-label{font-size:11px;color:#6b7280;}
-.metric-value{font-size:15px;margin-top:2px;}
-.start-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
-.start-actions button{border-radius:999px;}
-.start-weather-main{font-size:22px;font-weight:bold;}
-.start-weather-small{font-size:12px;}
+.metric-label{
+  font-size:11px;
+  color:#6b7280;
+}
+.metric-value{
+  font-size:15px;
+  margin-top:2px;
+}
+.start-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:8px;
+}
+.start-actions button{
+  border-radius:999px;
+}
+.start-weather-main{
+  font-size:22px;
+  font-weight:bold;
+}
+.start-weather-small{
+  font-size:12px;
+}
 
 /* Treatments fields table */
-#treatFieldsTable{width:100%;border-collapse:collapse;margin-top:4px;}
-#treatFieldsTable th,#treatFieldsTable td{
-  border:1px solid #e5e7eb;padding:3px 4px;font-size:12px;
+#treatFieldsTable{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:4px;
 }
-#treatFieldsTable th{background:#e5e7eb;}
+#treatFieldsTable th,#treatFieldsTable td{
+  border:1px solid #e5e7eb;
+  padding:3px 4px;
+  font-size:12px;
+}
+#treatFieldsTable th{
+  background:#e5e7eb;
+}
 
 /* Machine services */
 .service-entry{
-  border:1px solid #e5e7eb;border-radius:6px;padding:6px;
-  margin-bottom:6px;background:#ffffff;
+  border:1px solid #e5e7eb;
+  border-radius:6px;
+  padding:6px;
+  margin-bottom:6px;
+  background:#ffffff;
 }
 .service-entry-header{
-  display:flex;justify-content:space-between;font-size:12px;
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+}
+.service-chips{
+  margin-top:4px;
+}
+.service-chip{
+  display:inline-block;
+  padding:2px 6px;
+  font-size:11px;
+  border-radius:999px;
+  margin:0 4px 4px 0;
+  background:#eef2ff;
+  border:1px solid #c7d2fe;
 }
 
 /* Popup field info */
-.popup-title{font-weight:bold;}
-.popup-row{font-size:12px;margin-top:2px;}
+.popup-title{
+  font-weight:bold;
+}
+.popup-row{
+  font-size:12px;
+  margin-top:2px;
+}
 
 /* Delete treatment dialog */
-#undoStockWrapper{margin-top:6px;font-size:12px;}
+#undoStockWrapper{
+  margin-top:6px;
+  font-size:12px;
+}
 </style>
 </head>
 
@@ -362,649 +517,61 @@ button.primary:hover{background:#15803d}
 
   <!-- MAGAZYN -->
   <div id="warehouse" class="section">
-    <!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<title>Gospodarstwo – Panel</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:Arial,sans-serif;
-  background:#0f172a;
-  padding:20px;
-  color:#0f172a;
-}
-.container{
-  max-width:1200px;
-  margin:auto;
-  background:#f9fafb;
-  padding:16px;
-  border-radius:16px;
-  box-shadow:0 20px 40px rgba(15,23,42,0.35);
-  border:1px solid #1f2937;
-}
-h1{margin-bottom:4px;font-size:26px;}
-.app-subtitle{font-size:13px;color:#6b7280;margin-bottom:12px;}
-.tabs{margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;}
-.tabs button{
-  padding:6px 12px;border:none;border-radius:999px;
-  background:#e5e7eb;cursor:pointer;font-size:13px;
-}
-.tabs button.active{background:#2563eb;color:#fff;}
-.section{display:none}
-.section.active{display:block}
-
-#map{
-  width:100%;height:460px;border:1px solid #e5e7eb;
-  border-radius:10px;margin-top:8px;
-}
-
-.form-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
-.form-row label{font-size:13px;}
-.form-row input,.form-row select,.form-row textarea{
-  padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;
-  min-width:180px;font-size:13px;background:#ffffff;
-}
-button.primary{
-  background:#16a34a;color:#fff;border:none;padding:8px 14px;
-  border-radius:999px;cursor:pointer;margin-top:10px;font-size:13px;
-}
-button.primary:hover{background:#15803d}
-.small{font-size:12px;color:#6b7280}
-#fieldsContainer .field-item{
-  padding:6px 0;border-bottom:1px solid #e5e7eb;cursor:pointer;
-}
-#fieldsContainer .field-item:hover{background:#f3f4f6}
-
-.table{width:100%;border-collapse:collapse;margin-top:8px;}
-.table th,.table td{
-  border:1px solid #e5e7eb;padding:4px 6px;font-size:13px;
-}
-.table th{background:#e5e7eb;text-align:left}
-
-.badge{display:inline-block;padding:2px 6px;border-radius:4px;
-  font-size:11px;background:#e5e7eb;}
-.columns{display:flex;flex-wrap:wrap;gap:16px;}
-.col{flex:1 1 260px;}
-.checkbox-list{
-  max-height:200px;overflow:auto;border:1px solid #e5e7eb;
-  border-radius:6px;background:#ffffff;
-}
-
-#mapSearchRow{display:flex;gap:8px;margin-top:6px;align-items:center;}
-#mapSearchInput{
-  flex:1;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;
-}
-.field-actions{margin-top:4px;}
-.field-actions button{margin-right:4px;padding:2px 6px;font-size:11px;}
-
-.service-group{
-  border:1px solid #e5e7eb;border-radius:6px;padding:6px;
-  margin-top:6px;background:#f9fafb;
-}
-.service-group h4{margin:0 0 4px 0;font-size:13px;}
-.service-group label{display:block;font-size:12px;}
-#seasonsChartWrapper{max-width:600px;margin-top:12px;}
-
-/* START PAGE */
-#start{display:flex;flex-direction:column;gap:16px;}
-.start-hero{
-  display:flex;flex-wrap:wrap;justify-content:space-between;
-  gap:16px;align-items:flex-start;
-}
-.start-left{flex:2 1 260px;}
-.start-right{
-  flex:1 1 220px;border-radius:12px;padding:10px;
-  background:linear-gradient(135deg,#1d4ed8,#22c55e);color:#e5e7eb;
-}
-.start-right h3{margin-bottom:4px;}
-.start-metrics{display:flex;flex-wrap:wrap;gap:10px;}
-.metric-card{
-  flex:1 1 160px;border-radius:10px;padding:8px;
-  background:#ffffff;border:1px solid #e5e7eb;
-}
-.metric-label{font-size:11px;color:#6b7280;}
-.metric-value{font-size:15px;margin-top:2px;}
-.start-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
-.start-actions button{border-radius:999px;}
-.start-weather-main{font-size:22px;font-weight:bold;}
-.start-weather-small{font-size:12px;}
-
-/* Treatments fields table */
-#treatFieldsTable{width:100%;border-collapse:collapse;margin-top:4px;}
-#treatFieldsTable th,#treatFieldsTable td{
-  border:1px solid #e5e7eb;padding:3px 4px;font-size:12px;
-}
-#treatFieldsTable th{background:#e5e7eb;}
-
-/* Machine services */
-.service-entry{
-  border:1px solid #e5e7eb;border-radius:6px;padding:6px;
-  margin-bottom:6px;background:#ffffff;
-}
-.service-entry-header{
-  display:flex;justify-content:space-between;font-size:12px;
-}
-
-/* Popup field info */
-.popup-title{font-weight:bold;}
-.popup-row{font-size:12px;margin-top:2px;}
-
-/* Delete treatment dialog */
-#undoStockWrapper{margin-top:6px;font-size:12px;}
-</style>
-</head>
-
-<body>
-<div class="container">
-  <h1>Gospodarstwo Rolne Kaczmarek</h1>
-  <div class="app-subtitle">Panel zarządzania polami, zabiegami, magazynem i maszynami</div>
-
-  <div class="tabs">
-    <button class="active" onclick="showTab('start')">Start</button>
-    <button onclick="showTab('fields')">Pola</button>
-    <button onclick="showTab('treatments')">Zabiegi</button>
-    <button onclick="showTab('warehouse')">Magazyn</button>
-    <button onclick="showTab('machines')">Maszyny</button>
-    <button onclick="showTab('seasons')">Sezony</button>
-  </div>
-
-  <!-- START -->
-  <div id="start" class="section active">
-    <div class="start-hero">
-      <div class="start-left">
-        <div class="start-hello">
-          <div style="font-size:20px;margin-bottom:4px;">Witaj, <strong>Gospodarstwo Rolne Kaczmarek</strong></div>
-          <div id="startDateTime" class="small"></div>
-        </div>
-        <div class="start-actions">
-          <button class="primary" onclick="showTab('fields')">Przejdź do pól</button>
-          <button class="primary" onclick="showTab('treatments')">Dodaj zabieg</button>
-          <button class="primary" onclick="showTab('warehouse')">Sprawdź magazyn</button>
-        </div>
-        <div class="start-metrics" id="startMetrics">
-          <div class="metric-card">
-            <div class="metric-label">Liczba pól</div>
-            <div class="metric-value" id="metricFields">–</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Powierzchnia łączna [ha]</div>
-            <div class="metric-value" id="metricArea">–</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Ostatni zabieg</div>
-            <div class="metric-value" id="metricLastTreatment">–</div>
-          </div>
-        </div>
-      </div>
-      <div class="start-right">
-        <h3>Aktualna pogoda – Kurznie</h3>
-        <div id="startWeatherMain" class="start-weather-main">–</div>
-        <div id="startWeatherSmall" class="start-weather-small">Ładowanie...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- POLA -->
-  <div id="fields" class="section">
-    <h2>Pola</h2>
-    <p>Narysuj granice pola na mapie satelitarnej. Poniżej możesz wyszukać miejscowość.</p>
-
-    <div id="mapSearchRow">
-      <input id="mapSearchInput" placeholder="Wpisz miejscowość lub adres i naciśnij Enter">
-      <button class="primary" onclick="searchPlace()">Szukaj</button>
-    </div>
-
-    <div id="map"></div>
-
-    <div class="form-row">
-      <div>
-        <label>Nazwa pola<br>
-          <input id="fieldName" placeholder="Np. Pszenica przy drodze">
-        </label>
-      </div>
-      <div>
-        <label>Powierzchnia [ha]<br>
-          <input id="fieldArea" readonly>
-        </label>
-      </div>
-      <div>
-        <label>Aktualna uprawa<br>
-          <select id="fieldCrop">
-            <option value="">Ładowanie...</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label>Rok sezonu<br>
-          <input id="fieldSeasonYear" type="number" value="2026">
-        </label>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div>
-        <label>Data siewu (opcjonalnie)<br>
-          <input id="fieldSowDate" type="date">
-        </label>
-      </div>
-      <div style="flex:1">
-        <label>Uwagi<br>
-          <textarea id="fieldNotes" rows="2" style="width:100%;"></textarea>
-        </label>
-      </div>
-    </div>
-
-    <button class="primary" onclick="saveField()">Zapisz pole</button>
-
-    <div id="fieldsList" style="margin-top:16px;border-top:1px solid #e5e7eb;padding-top:10px;">
-      <h3>Twoje pola</h3>
-      <div id="fieldsContainer" class="small">Ładowanie...</div>
-    </div>
-  </div>
-
-  <!-- ZABIEGI -->
-  <div id="treatments" class="section">
-    <h2>Zabiegi</h2>
-
-    <div class="form-row">
-      <div>
-        <label>Data zabiegu<br>
-          <input id="treatDate" type="date">
-        </label>
-      </div>
-      <div>
-        <label>Typ zabiegu<br>
-          <select id="treatType">
-            <option value="oprysk">Oprysk</option>
-            <option value="nawozenie">Nawożenie</option>
-            <option value="inne">Inne</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label>Przybliżona temperatura [°C]<br>
-          <input id="treatTemp" type="number" step="0.5" placeholder="np. 15">
-        </label>
-      </div>
-    </div>
-
-    <div class="form-row">
+    <h2>Magazyn</h2>
+    <div class="columns">
       <div class="col">
-        <label>Pola objęte zabiegiem</label>
-        <div class="checkbox-list small">
-          <table id="treatFieldsTable">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Uprawa</th>
-                <th>Nazwa pola</th>
-                <th>Pow. [ha]</th>
-              </tr>
-            </thead>
-            <tbody id="treatFieldsList">
-              <tr><td colspan="4">Ładowanie pól...</td></tr>
-            </tbody>
-          </table>
+        <h3>Paliwo (Diesel)</h3>
+        <div class="form-row">
+          <label>Diesel [litry]<br>
+            <input id="fuelName" value="Diesel" readonly>
+          </label>
+          <label>Ilość [l]<br>
+            <input id="fuelQty" type="number" step="0.01">
+          </label>
         </div>
+        <button class="primary" onclick="saveFuel()">Zapisz stan paliwa</button>
+        <div id="fuelInfo" class="small" style="margin-top:8px;"></div>
       </div>
 
       <div class="col">
-        <label>Środki z magazynu (bez paliwa)</label>
-        <table class="table small">
+        <h3>Środki ochrony roślin</h3>
+        <div class="form-row">
+          <label>Nazwa<br>
+            <input id="ppName">
+          </label>
+          <label>Ilość [l/kg]<br>
+            <input id="ppQty" type="number" step="0.01">
+          </label>
+        </div>
+        <button class="primary" onclick="addPlantProtection()">Dodaj / zaktualizuj</button>
+        <table class="table small" id="ppTable">
           <thead>
-            <tr>
-              <th>Pozycja magazynu</th>
-              <th>Ilość [jedn]</th>
-              <th>Dawka / ha</th>
-            </tr>
+            <tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr>
           </thead>
-          <tbody id="treatItemsBody">
-            <tr>
-              <td>
-                <select class="treatItemSelect">
-                  <option value="">-- wybierz --</option>
-                </select>
-              </td>
-              <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
-              <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
-            </tr>
-          </tbody>
+          <tbody></tbody>
         </table>
-        <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
+      </div>
 
-        <h3 style="margin-top:8px;">Środki jednorazowe (poza magazynem)</h3>
-        <table class="table small">
+      <div class="col">
+        <h3>Nawozy</h3>
+        <div class="form-row">
+          <label>Nazwa<br>
+            <input id="fertName">
+          </label>
+          <label>Ilość [kg]<br>
+            <input id="fertQty" type="number" step="0.01">
+          </label>
+        </div>
+        <button class="primary" onclick="addFertilizer()">Dodaj / zaktualizuj</button>
+        <table class="table small" id="fertTable">
           <thead>
-            <tr>
-              <th>Nazwa środka</th>
-              <th>Ilość łączna</th>
-              <th>Jednostka</th>
-              <th>Dawka / ha</th>
-              <th>Akcja</th>
-            </tr>
+            <tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr>
           </thead>
-          <tbody id="extraItemsBody">
-            <tr>
-              <td><input class="extraName" placeholder="np. Nowy herbicyd"></td>
-              <td><input type="number" step="0.01" class="extraAmount" style="width:80px"></td>
-              <td><input class="extraUnit" placeholder="l / kg" style="width:70px"></td>
-              <td><input type="number" step="0.01" class="extraDose" style="width:80px" readonly></td>
-              <td><button onclick="removeExtraItemRow(this)">Usuń</button></td>
-            </tr>
-          </tbody>
+          <tbody></tbody>
         </table>
-        <button class="primary" style="margin-top:6px;" onclick="addExtraItemRow()">Dodaj środek jednorazowy</button>
       </div>
     </div>
-
-    <div class="form-row">
-      <div style="flex:1">
-        <label>Notatka<br>
-          <textarea id="treatNote" rows="2" style="width:100%;"></textarea>
-        </label>
-      </div>
-    </div>
-
-    <button class="primary" onclick="saveTreatment()">Zapisz zabieg</button>
-
-    <h3 style="margin-top:16px;">Historia zabiegów</h3>
-    <div id="treatmentsList" class="small">Ładowanie...</div>
   </div>
-
-  <!-- MAGAZYN -->
-  <div id="warehouse" class="section">
-    <!-- tutaj wklej swój dotychczasowy HTML magazynu z paliwem i środkami
-         (nie wymagał zmian, więc go nie przepisuję, jest identyczny jak w pliku 290) -->
-  </div>
-
-  <!-- MASZYNY -->
-  <div id="machines" class="section">
-    <!-- HTML maszyn z Twojego pliku, z przyciskami:
-         <button class="primary" id="serviceSaveBtn" onclick="saveService()">Zapisz serwis</button>
-         <button class="primary" id="serviceCancelEditBtn" style="display:none;" onclick="cancelServiceEdit()">Anuluj edycję</button>
-         i divem <div id="servicesList"> -->
-  </div>
-
-  <!-- SEZONY -->
-  <div id="seasons" class="section">
-    <!-- Twój HTML sekcji sezonów (tabela + canvas #seasonChart) -->
-  </div>
-</div>
-
-<script>
-const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let map, drawnItems, currentPolygonGeoJSON = null;
-let fieldLayers = {};
-let editingFieldId = null;
-let editingMachineId = null;
-let editingTreatmentId = null;
-let editingServiceId = null;
-let seasonChart = null;
-let drawControl;
-
-const KURZNIE_LAT = 50.6920;
-const KURZNIE_LON = 17.7470;
-
-/* TABS */
-
-function showTab(id){
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelector(`.tabs button[onclick="showTab('${id}')"]`).classList.add('active');
-  document.getElementById(id).classList.add('active');
-  if(id === 'fields' && map){
-    setTimeout(()=>map.invalidateSize(),50);
-  }
-  if(id === 'seasons') loadSeasonSummary();
-}
-
-/* MAPA + POLA */
-
-function initMap(){
-  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
-
-  L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {
-      maxZoom: 19,
-      attribution: 'Tiles © Esri, Maxar, Earthstar Geographics'
-    }
-  ).addTo(map);
-
-  drawnItems = new L.FeatureGroup();
-  map.addLayer(drawnItems);
-
-  drawControl = new L.Control.Draw({
-    position:'topright',
-    edit:{ featureGroup: drawnItems },
-    draw:{
-      polygon:true,
-      polyline:false,
-      circle:false,
-      rectangle:false,
-      marker:false,
-      circlemarker:false
-    }
-  });
-  map.addControl(drawControl);
-
-  map.on(L.Draw.Event.CREATED, e=>{
-    drawnItems.clearLayers();
-    drawnItems.addLayer(e.layer);
-    updateFieldAreaFromLayer(e.layer);
-    currentPolygonGeoJSON = e.layer.toGeoJSON();
-  });
-
-  map.on(L.Draw.Event.EDITED, e=>{
-    e.layers.eachLayer(layer=>{
-      updateFieldAreaFromLayer(layer);
-      currentPolygonGeoJSON = layer.toGeoJSON();
-    });
-  });
-}
-
-function updateFieldAreaFromLayer(layer){
-  const geo = layer.toGeoJSON();
-  const areaHa = turf.area(geo) / 10000;
-  document.getElementById('fieldArea').value = areaHa.toFixed(2);
-}
-
-/* dalej wklej swoje funkcje z pliku 290:
-   - CROP_COLORS, getCropColor
-   - updateStartClock, loadStartWeather, updateStartMetrics
-   - logika pól (saveField, loadFields, loadTreatmentFields, searchPlace, popup)
-   - logika zabiegów (saveTreatment, editTreatment, deleteTreatment, dawki)
-   - logika magazynu (ensureFuelRow, saveFuel, addPlantProtection, loadWarehouseTables, loadWarehouseForTreatments)
-   - logika maszyn (saveMachine, loadMachines, loadServicesForMachine)
-   - logika sezonów (loadSeasonSummary)
-   – nic w nich nie zmieniaj, tylko upewnij się, że nie ma w globalnym kodzie „gołych” await.
-*/
-
-/* SERWIS MASZYN – nowy kod */
-
-async function saveService(){
-  const machineId = document.getElementById('serviceMachineSelect').value;
-  const date = document.getElementById('serviceDate').value;
-  const serviceOdo = document.getElementById('serviceOdo').value;
-  const note = document.getElementById('serviceNote').value.trim();
-
-  if(!machineId || !date){
-    alert('Wybierz maszynę i datę serwisu');
-    return;
-  }
-
-  const chips = [];
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>{
-    if(cb.checked){
-      const label = cb.parentElement.textContent.trim();
-      chips.push(label);
-    }
-  });
-  const fullNote = chips.length ? (note ? note + ' | ' : '') + chips.join(', ') : note;
-  const odo = serviceOdo ? Number(serviceOdo) : null;
-
-  let errorSave = null;
-  if(editingServiceId){
-    const { error } = await supabaseClient
-      .from('machine_services')
-      .update({ service_date:date, odometer_at_service:odo, note:fullNote })
-      .eq('id', editingServiceId);
-    errorSave = error;
-  }else{
-    const { error } = await supabaseClient
-      .from('machine_services')
-      .insert([{ machine_id:Number(machineId), service_date:date, odometer_at_service:odo, note:fullNote }]);
-    errorSave = error;
-  }
-
-  if(errorSave){
-    console.log('Service save error', errorSave);
-    alert('Błąd zapisu serwisu');
-    return;
-  }
-
-  if(odo){
-    const { error: updErr } = await supabaseClient
-      .from('machines')
-      .update({ odometer: odo })
-      .eq('id', Number(machineId));
-    if(updErr) console.log('Update machine odometer error', updErr);
-    await loadMachines();
-  }
-
-  alert(editingServiceId ? 'Serwis zaktualizowany' : 'Serwis zapisany');
-
-  editingServiceId = null;
-  document.getElementById('serviceDate').value = '';
-  document.getElementById('serviceOdo').value = '';
-  document.getElementById('serviceNote').value = '';
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
-  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
-  document.getElementById('serviceCancelEditBtn').style.display = 'none';
-
-  await loadServicesForMachine(Number(machineId));
-}
-
-async function loadServicesForMachine(machineId){
-  const { data, error } = await supabaseClient
-    .from('machine_services')
-    .select('*')
-    .eq('machine_id', machineId)
-    .order('service_date',{ascending:false});
-
-  const box = document.getElementById('servicesList');
-  if(error){
-    console.log('Services load error', error);
-    box.textContent='Błąd ładowania serwisów';
-    return;
-  }
-  if(!data || data.length===0){
-    box.textContent='Brak serwisów dla tej maszyny';
-    return;
-  }
-
-  box.innerHTML='';
-  data.forEach(s=>{
-    const div = document.createElement('div');
-    div.className = 'service-entry';
-    div.innerHTML = `
-      <div class="service-entry-header">
-        <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '–'}</span>
-        <span>
-          <button onclick="editService(${s.id})">Edytuj</button>
-          <button onclick="deleteService(${s.id})">Usuń</button>
-        </span>
-      </div>
-      <div class="small">Uwagi: ${s.note || '—'}</div>
-    `;
-    box.appendChild(div);
-  });
-}
-
-async function editService(serviceId){
-  const { data, error } = await supabaseClient
-    .from('machine_services')
-    .select('*')
-    .eq('id', serviceId)
-    .single();
-  if(error || !data){
-    alert('Nie udało się wczytać serwisu');
-    return;
-  }
-
-  editingServiceId = serviceId;
-  document.getElementById('serviceMachineSelect').value = data.machine_id;
-  document.getElementById('serviceDate').value = data.service_date || '';
-  document.getElementById('serviceOdo').value = data.odometer_at_service ?? '';
-  document.getElementById('serviceNote').value = data.note || '';
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
-  document.getElementById('serviceSaveBtn').textContent = 'Zapisz zmiany';
-  document.getElementById('serviceCancelEditBtn').style.display = 'inline-block';
-
-  await loadServicesForMachine(data.machine_id);
-}
-
-function cancelServiceEdit(){
-  editingServiceId = null;
-  document.getElementById('serviceDate').value = '';
-  document.getElementById('serviceOdo').value = '';
-  document.getElementById('serviceNote').value = '';
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
-  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
-  document.getElementById('serviceCancelEditBtn').style.display = 'none';
-}
-
-async function deleteService(serviceId){
-  if(!confirm('Na pewno usunąć serwis?')) return;
-  const { error } = await supabaseClient
-    .from('machine_services')
-    .delete()
-    .eq('id', serviceId);
-  if(error){
-    alert('Błąd usuwania serwisu');
-    return;
-  }
-  const machineId = document.getElementById('serviceMachineSelect').value;
-  if(machineId) await loadServicesForMachine(Number(machineId));
-}
-
-/* INIT */
-
-document.addEventListener('DOMContentLoaded', async () => {
-  initMap();
-  await loadCrops();
-  await loadFields();
-  await loadTreatmentFields();
-  await ensureFuelRow();
-  await loadWarehouseTables();
-  await loadWarehouseForTreatments();
-  await loadTreatmentsList();
-  await loadMachines();
-  await loadSeasonSummary();
-  await loadStartWeather();
-  updateStartClock();
-  setInterval(updateStartClock, 60000);
-  await updateStartMetrics();
-});
-</script>
-</body>
-</html>
 
   <!-- MASZYNY -->
   <div id="machines" class="section">
@@ -1090,8 +657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
         </div>
 
-        <button class="primary" id="serviceSaveBtn" onclick="saveService()">Zapisz serwis</button>
-        <button class="primary" id="serviceCancelEditBtn" style="display:none;" onclick="cancelServiceEdit()">Anuluj edycję</button>
+        <button class="primary" onclick="saveService()">Zapisz serwis</button>
         <div id="servicesList" class="small" style="margin-top:10px;">Wybierz maszynę, aby zobaczyć historię serwisów.</div>
       </div>
     </div>
@@ -1111,10 +677,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     <div id="seasonsChartWrapper">
       <canvas id="seasonChart"></canvas>
+    </div>
   </div>
+
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.js"></script>
 <script>
+  
 const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1124,76 +696,10 @@ let fieldLayers = {};
 let editingFieldId = null;
 let editingMachineId = null;
 let editingTreatmentId = null;
-let editingServiceId = null;
 let seasonChart = null;
-let drawControl;
 
-const KURZNIE_LAT = 50.6920;
-const KURZNIE_LON = 17.7470;
-
-/* TABS */
-
-function showTab(id){
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelector(`.tabs button[onclick="showTab('${id}')"]`).classList.add('active');
-  document.getElementById(id).classList.add('active');
-  if(id === 'fields' && map){
-    setTimeout(()=>map.invalidateSize(),50);
-  }
-  if(id === 'seasons') loadSeasonSummary();
-}
-
-/* MAPA + POLA */
-
-function initMap(){
-  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
-
-  L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {
-      maxZoom: 19,
-      attribution: 'Tiles © Esri, Maxar, Earthstar Geographics'
-    }
-  ).addTo(map);
-
-  drawnItems = new L.FeatureGroup();
-  map.addLayer(drawnItems);
-
-  drawControl = new L.Control.Draw({
-    position:'topright',
-    edit:{ featureGroup: drawnItems },
-    draw:{
-      polygon:true,
-      polyline:false,
-      circle:false,
-      rectangle:false,
-      marker:false,
-      circlemarker:false
-    }
-  });
-  map.addControl(drawControl);
-
-  map.on(L.Draw.Event.CREATED, e=>{
-    drawnItems.clearLayers();
-    drawnItems.addLayer(e.layer);
-    updateFieldAreaFromLayer(e.layer);
-    currentPolygonGeoJSON = e.layer.toGeoJSON();
-  });
-
-  map.on(L.Draw.Event.EDITED, e=>{
-    e.layers.eachLayer(layer=>{
-      updateFieldAreaFromLayer(layer);
-      currentPolygonGeoJSON = layer.toGeoJSON();
-    });
-  });
-}
-
-function updateFieldAreaFromLayer(layer){
-  const geo = layer.toGeoJSON();
-  const areaHa = turf.area(geo) / 10000;
-  document.getElementById('fieldArea').value = areaHa.toFixed(2);
-}
+const KURZNIE_LAT = 50.692;
+const KURZNIE_LON = 17.747;
 
 const CROP_COLORS = {
   'Pszenica ozima': '#facc15',
@@ -1288,6 +794,57 @@ function showTab(id){
   if(id === 'seasons') loadSeasonSummary();
 }
 
+/* MAPA */
+
+function initMap(){
+  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
+
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+  ).addTo(map);
+
+  L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { maxZoom: 19, opacity:0.6, attribution: '&copy; OpenStreetMap' }
+  ).addTo(map);
+
+  drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+
+  const drawControl = new L.Control.Draw({
+    position: 'topleft',
+    draw: {
+      polygon: { allowIntersection:false, showArea:true, metric:true },
+      polyline:false, rectangle:false, circle:false, marker:false, circlemarker:false
+    },
+    edit: { featureGroup: drawnItems }
+  });
+  map.addControl(drawControl);
+
+  map.on(L.Draw.Event.CREATED, function (event) {
+    drawnItems.clearLayers();
+    const layer = event.layer;
+    drawnItems.addLayer(layer);
+    updateAreaFromLayer(layer);
+  });
+
+  map.on('draw:edited', function(e){
+    const layers = e.layers;
+    layers.eachLayer(layer => {
+      drawnItems.clearLayers();
+      drawnItems.addLayer(layer);
+      updateAreaFromLayer(layer);
+    });
+  });
+
+  document.getElementById('mapSearchInput').addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      searchPlace();
+    }
+  });
+}
 
 function updateAreaFromLayer(layer){
   const geojson = layer.toGeoJSON();
@@ -2502,171 +2059,179 @@ function clearServiceCheckboxes(){
   });
 }
 
-/* SERWIS MASZYN – nowy kod */
-
 async function saveService(){
-  const machineId = document.getElementById('serviceMachineSelect').value;
+  const machineSelect = document.getElementById('serviceMachineSelect');
+  const machineId = Number(machineSelect.value || '0');
+  if(!machineId){
+    alert('Wybierz maszynę');
+    return;
+  }
+  const type = machineSelect.selectedOptions[0]?.dataset.type || 'maszyna';
   const date = document.getElementById('serviceDate').value;
-  const serviceOdo = document.getElementById('serviceOdo').value;
+  const odo = parseFloat(document.getElementById('serviceOdo').value || '0');
   const note = document.getElementById('serviceNote').value.trim();
 
-  if(!machineId || !date){
-    alert('Wybierz maszynę i datę serwisu');
+  if(!date){
+    alert('Podaj datę serwisu');
     return;
   }
 
-  const chips = [];
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>{
-    if(cb.checked){
-      const label = cb.parentElement.textContent.trim();
-      chips.push(label);
-    }
-  });
-  const fullNote = chips.length ? (note ? note + ' | ' : '') + chips.join(', ') : note;
-  const odo = serviceOdo ? Number(serviceOdo) : null;
+  const chips = collectServiceChipsFromCheckboxes(type);
+  const fullNote = chips.length ? `[${chips.join(', ')}] ${note}` : note;
 
-  let errorSave = null;
-  if(editingServiceId){
-    const { error } = await supabaseClient
-      .from('machine_services')
-      .update({ service_date:date, odometer_at_service:odo, note:fullNote })
-      .eq('id', editingServiceId);
-    errorSave = error;
-  }else{
-    const { error } = await supabaseClient
-      .from('machine_services')
-      .insert([{ machine_id:Number(machineId), service_date:date, odometer_at_service:odo, note:fullNote }]);
-    errorSave = error;
-  }
-
-  if(errorSave){
-    console.log('Service save error', errorSave);
+  const { error } = await supabaseClient
+    .from('machine_services')
+    .insert([{ machine_id:machineId, service_date:date, odo_at_service:odo, note:fullNote }]);
+  if(error){
     alert('Błąd zapisu serwisu');
+    console.log('Service save error', error);
     return;
   }
 
-  if(odo){
-    const { error: updErr } = await supabaseClient
-      .from('machines')
-      .update({ odometer: odo })
-      .eq('id', Number(machineId));
-    if(updErr) console.log('Update machine odometer error', updErr);
-    await loadMachines();
-  }
-
-  alert(editingServiceId ? 'Serwis zaktualizowany' : 'Serwis zapisany');
-
-  editingServiceId = null;
-  document.getElementById('serviceDate').value = '';
-  document.getElementById('serviceOdo').value = '';
-  document.getElementById('serviceNote').value = '';
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
-  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
-  document.getElementById('serviceCancelEditBtn').style.display = 'none';
-
-  await loadServicesForMachine(Number(machineId));
+  document.getElementById('serviceDate').value='';
+  document.getElementById('serviceOdo').value='';
+  document.getElementById('serviceNote').value='';
+  clearServiceCheckboxes();
+  await loadMachineServices(machineId);
 }
 
-async function loadServicesForMachine(machineId){
+async function loadMachineServices(machineId){
+  const box = document.getElementById('servicesList');
+  if(!machineId){
+    box.textContent = 'Wybierz maszynę, aby zobaczyć historię serwisów.';
+    return;
+  }
+
   const { data, error } = await supabaseClient
     .from('machine_services')
-    .select('*')
+    .select('id,service_date,odo_at_service,note')
     .eq('machine_id', machineId)
     .order('service_date',{ascending:false});
 
-  const box = document.getElementById('servicesList');
   if(error){
     console.log('Services load error', error);
-    box.textContent='Błąd ładowania serwisów';
+    box.textContent = 'Błąd ładowania serwisów';
     return;
   }
   if(!data || data.length===0){
-    box.textContent='Brak serwisów dla tej maszyny';
+    box.textContent = 'Brak zapisanych serwisów dla tej maszyny.';
     return;
   }
 
-  box.innerHTML='';
+  box.innerHTML = '';
   data.forEach(s=>{
     const div = document.createElement('div');
     div.className = 'service-entry';
+    const chips = [];
+    const restNote = (s.note || '');
+    const match = restNote.match(/^\[(.+?)\]\s*(.*)$/);
+    let cleanNote = restNote;
+    if(match){
+      chips.push(...match[1].split(',').map(x=>x.trim()).filter(Boolean));
+      cleanNote = match[2] || '';
+    }
+
+    let chipsHtml = '';
+    if(chips.length){
+      chipsHtml = '<div class="service-chips">' +
+        chips.map(c=>`<span class="service-chip">${c}</span>`).join('') +
+        '</div>';
+    }
+
     div.innerHTML = `
       <div class="service-entry-header">
-        <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '–'}</span>
-        <span>
-          <button onclick="editService(${s.id})">Edytuj</button>
-          <button onclick="deleteService(${s.id})">Usuń</button>
-        </span>
+        <span><strong>${s.service_date}</strong> – przebieg: ${s.odo_at_service ?? '-'} </span>
+        <span class="small">ID: ${s.id}</span>
       </div>
-      <div class="small">Uwagi: ${s.note || '—'}</div>
+      ${chipsHtml}
+      <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
     `;
     box.appendChild(div);
   });
 }
 
-async function editService(serviceId){
+/* SEZONY */
+
+async function loadSeasonSummary(){
+  const year = parseInt(document.getElementById('seasonYearSelect').value || '0');
+  const box = document.getElementById('seasonSummary');
+  if(!year){
+    box.textContent = 'Podaj rok sezonu.';
+    return;
+  }
+
   const { data, error } = await supabaseClient
-    .from('machine_services')
-    .select('*')
-    .eq('id', serviceId)
-    .single();
-  if(error || !data){
-    alert('Nie udało się wczytać serwisu');
-    return;
-  }
+    .from('field_seasons')
+    .select('field_id,season_year,crop_name,area_ha')
+    .eq('season_year', year);
 
-  editingServiceId = serviceId;
-  document.getElementById('serviceMachineSelect').value = data.machine_id;
-  document.getElementById('serviceDate').value = data.service_date || '';
-  document.getElementById('serviceOdo').value = data.odometer_at_service ?? '';
-  document.getElementById('serviceNote').value = data.note || '';
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
-  document.getElementById('serviceSaveBtn').textContent = 'Zapisz zmiany';
-  document.getElementById('serviceCancelEditBtn').style.display = 'inline-block';
-
-  await loadServicesForMachine(data.machine_id);
-}
-
-function cancelServiceEdit(){
-  editingServiceId = null;
-  document.getElementById('serviceDate').value = '';
-  document.getElementById('serviceOdo').value = '';
-  document.getElementById('serviceNote').value = '';
-  document.querySelectorAll('#tractorService input[type="checkbox"], #combineService input[type="checkbox"]').forEach(cb=>cb.checked=false);
-  document.getElementById('serviceSaveBtn').textContent = 'Zapisz serwis';
-  document.getElementById('serviceCancelEditBtn').style.display = 'none';
-}
-
-async function deleteService(serviceId){
-  if(!confirm('Na pewno usunąć serwis?')) return;
-  const { error } = await supabaseClient
-    .from('machine_services')
-    .delete()
-    .eq('id', serviceId);
   if(error){
-    alert('Błąd usuwania serwisu');
+    console.log('Season summary error', error);
+    box.textContent = 'Błąd ładowania danych sezonu';
     return;
   }
-  const machineId = document.getElementById('serviceMachineSelect').value;
-  if(machineId) await loadServicesForMachine(Number(machineId));
+  if(!data || data.length===0){
+    box.textContent = 'Brak danych dla tego roku.';
+    if(seasonChart){
+      seasonChart.destroy();
+      seasonChart = null;
+    }
+    return;
+  }
+
+  const totals = {};
+  data.forEach(row=>{
+    const crop = row.crop_name || '—';
+    if(!totals[crop]) totals[crop] = 0;
+    totals[crop] += Number(row.area_ha || 0);
+  });
+
+  let html = '<ul>';
+  Object.entries(totals).forEach(([crop,area])=>{
+    html += `<li>${crop}: ${area.toFixed(2)} ha</li>`;
+  });
+  html += '</ul>';
+  box.innerHTML = html;
+
+  const ctx = document.getElementById('seasonChart').getContext('2d');
+  const labels = Object.keys(totals);
+  const areas = Object.values(totals);
+  const colors = labels.map(c=>getCropColor(c));
+
+  if(seasonChart) seasonChart.destroy();
+  seasonChart = new Chart(ctx, {
+    type:'pie',
+    data:{
+      labels,
+      datasets:[{
+        data:areas,
+        backgroundColor:colors
+      }]
+    },
+    options:{
+      plugins:{
+        legend:{position:'bottom'}
+      }
+    }
+  });
 }
 
 /* INIT */
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async ()=>{
   initMap();
+  await ensureFuelRow();
   await loadCrops();
   await loadFields();
   await loadTreatmentFields();
-  await ensureFuelRow();
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
   await loadTreatmentsList();
   await loadMachines();
-  await loadSeasonSummary();
+  await updateStartMetrics();
   await loadStartWeather();
   updateStartClock();
   setInterval(updateStartClock, 60000);
-  await updateStartMetrics();
 });
 </script>
 </body>
