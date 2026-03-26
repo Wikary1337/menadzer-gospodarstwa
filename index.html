@@ -2200,6 +2200,7 @@ async function saveService(){
 
 async function loadMachineServices(machineId){
   const box = document.getElementById('servicesList');
+
   if(!machineId){
     box.textContent = 'Wybierz maszynę, aby zobaczyć historię serwisów.';
     return;
@@ -2209,35 +2210,45 @@ async function loadMachineServices(machineId){
     .from('machine_services')
     .select('id,service_date,odo_at_service,note')
     .eq('machine_id', machineId)
-    .order('service_date',{ascending:false});
+    .order('service_date', { ascending:false });
 
   if(error){
     console.log('Services load error', error);
     box.textContent = 'Błąd ładowania serwisów';
     return;
   }
-  if(!data || data.length===0){
+
+  if(!data || data.length === 0){
     box.textContent = 'Brak zapisanych serwisów dla tej maszyny.';
     return;
   }
 
   box.innerHTML = '';
-  data.forEach(s=>{
+
+  data.forEach(s => {
     const div = document.createElement('div');
     div.className = 'service-entry';
+
+    const restNote = s.note || '';
+    const match = restNote.match(/^\[(.+?)\]\s*(.*)$/); // bez podwójnych backslashy
     const chips = [];
-    const restNote = (s.note || '');
-    const match = restNote.match(/^\[(.+?)\]\s*(.*)$/);
     let cleanNote = restNote;
+
     if(match){
-      chips.push(...match[1].split(',').map(x=>x.trim()).filter(Boolean));
+      chips.push(
+        ...match[1]
+          .split(',')
+          .map(x => x.trim())
+          .filter(Boolean)
+      );
       cleanNote = match[2] || '';
     }
 
     let chipsHtml = '';
     if(chips.length){
-      chipsHtml = '<div class="service-chips">' +
-        chips.map(c=>`<span class="service-chip">${c}</span>`).join('') +
+      chipsHtml =
+        '<div class="service-chips">' +
+        chips.map(c => `<span class="service-chip">${c}</span>`).join('') +
         '</div>';
     }
 
@@ -2249,6 +2260,7 @@ async function loadMachineServices(machineId){
       ${chipsHtml}
       <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
     `;
+
     box.appendChild(div);
   });
 }
