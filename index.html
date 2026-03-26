@@ -722,6 +722,25 @@ function getCropColor(name){
   const n = (name || '').trim();
   if (CROP_COLORS[n]) return CROP_COLORS[n];
   return '#22c55e';
+
+  function getCropNameById(id){
+  if(!id) return 'brak uprawy';
+  return cropsById[id] || id; // jak extra_..., to chociaż pokaże tekst
+}
+
+// przykład w Leaflet:
+function addFieldPolygon(field){
+  const polygon = L.polygon(field.geometry, {
+    color: '#3388ff'
+  }).addTo(fieldsLayerGroup);
+
+  const cropName = getCropNameById(field.current_crop_id);
+
+  polygon.bindPopup(
+    `<b>${field.name}</b><br>` +
+    `Uprawa: ${cropName || 'brak'}<br>` +
+    `Powierzchnia: ${field.area_ha || '-'} ha`
+  );
 }
 
 /* START TAB & WEATHER */
@@ -875,6 +894,8 @@ async function searchPlace(){
 }
 
 /* UPRAWY */
+  
+let cropsById = {};
 
 async function loadCrops(){
   const select = document.getElementById('fieldCrop');
@@ -959,11 +980,14 @@ async function loadCrops(){
     'Borówka wysoka'
   ];
 
-  const filtered = [];
+ const filtered = [];
+  cropsById = {}; // reset
+
   wanted.forEach(name=>{
     const row = (data || []).find(c=>c.name===name);
-    if(row) filtered.push(row);
-    else filtered.push({id:`extra_${name}`,name});
+    const rec = row || {id:`extra_${name}`, name};
+    filtered.push(rec);
+    cropsById[rec.id] = rec.name;
   });
 
   select.innerHTML = '<option value="">-- wybierz uprawe --</option>';
@@ -974,6 +998,7 @@ async function loadCrops(){
     select.appendChild(opt);
   });
 }
+  
 /* POLA */
 
 async function loadFields(){
