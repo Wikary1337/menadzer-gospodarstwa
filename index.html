@@ -685,7 +685,6 @@ let editingMachineId = null;
 let editingTreatmentId = null;
 let seasonChart = null;
 
-<script>
 const KURZNIE_LAT = 50.6920;
 const KURZNIE_LON = 17.7470;
 
@@ -846,52 +845,6 @@ function showTab(id){
   if(id === 'seasons') loadSeasonSummary();
 }
 
-/* MAPA */
-
-function initMap(){
-  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
-
- L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {
-    maxZoom: 19,
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-  }
-).addTo(map);
-
-  const drawControl = new L.Control.Draw({
-    position: 'topleft',
-    draw: {
-      polygon: { allowIntersection:false, showArea:true, metric:true },
-      polyline:false, rectangle:false, circle:false, marker:false, circlemarker:false
-    },
-    edit: { featureGroup: drawnItems }
-  });
-  map.addControl(drawControl);
-
-  map.on(L.Draw.Event.CREATED, function (event) {
-    drawnItems.clearLayers();
-    const layer = event.layer;
-    drawnItems.addLayer(layer);
-    updateAreaFromLayer(layer);
-  });
-
-  map.on('draw:edited', function(e){
-    const layers = e.layers;
-    layers.eachLayer(layer => {
-      drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-      updateAreaFromLayer(layer);
-    });
-  });
-
-  document.getElementById('mapSearchInput').addEventListener('keydown', e=>{
-    if(e.key === 'Enter'){
-      e.preventDefault();
-      searchPlace();
-    }
-  });
-}
 
 function updateAreaFromLayer(layer){
   const geojson = layer.toGeoJSON();
