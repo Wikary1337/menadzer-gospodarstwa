@@ -2102,11 +2102,11 @@ async function loadMachineServices(machineId){
     return;
   }
 
-  const { data, error } = await supabaseClient
-    .from('machine_services')
-    .select('id,service_date,odo_at_service,note')
-    .eq('machine_id', machineId)
-    .order('service_date',{ascending:false});
+ const { data, error } = await supabaseClient
+   .from('machine_services')
+   .select('id,date,odo_at_service,note')
+   .eq('machine_id', machineId)
+   .order('date',{ascending:false});
 
   if(error){
     console.log('Services load error', error);
@@ -2140,8 +2140,7 @@ async function loadMachineServices(machineId){
 
     div.innerHTML = `
       <div class="service-entry-header">
-        <span><strong>${s.service_date}</strong> – przebieg: ${s.odo_at_service ?? '-'} </span>
-        <span class="small">ID: ${s.id}</span>
+       <span><strong>${s.date}</strong> – przebieg: ${s.odo_at_service ?? '-'} </span>
       </div>
       ${chipsHtml}
       <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
