@@ -1077,7 +1077,7 @@ async function loadFields(){
     map.setView([KURZNIE_LAT, KURZNIE_LON], 15);
   }
 }
-/* ZABIEGI – pola w tabeli */
+/* ZABieGI – pola w tabeli */
 
 async function loadTreatmentFields(){
   const body = document.getElementById('treatFieldsList');
@@ -1099,13 +1099,14 @@ async function loadTreatmentFields(){
     body.innerHTML = '<tr><td colspan="4">Błąd ładowania pól</td></tr>';
     return;
   }
-  if(!data || data.length===0){
+  if(!data || data.length === 0){
     body.innerHTML = '<tr><td colspan="4">Brak pól – dodaj pola w zakładce Pola.</td></tr>';
     return;
   }
 
   body.innerHTML = '';
-  data.forEach(field=>{
+
+  data.forEach(field => {
     let cropName = '—';
     if (field.crops && field.crops.name) {
       cropName = field.crops.name;
