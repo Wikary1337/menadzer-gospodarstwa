@@ -1002,11 +1002,26 @@ async function loadFields(){
   const bounds = L.latLngBounds();
   container.innerHTML = '';
 
-  data.forEach(field => {
-    const div = document.createElement('div');
-    div.className = 'field-item';
-    let cropName = '—';
-const currentYear = new Date().getFullYear();
+ data.forEach(field => {
+  const div = document.createElement('div');
+  div.className = 'field-item';
+
+  let cropName = '—';
+  if (field.crops && field.crops.name) {
+    cropName = field.crops.name;
+  }
+  const color = getCropColor(cropName);
+  const notes = field.notes ? `, uwagi: ${field.notes}` : '';
+
+  div.innerHTML = `
+    <strong style="color:${color}">${field.name}</strong> – ${Number(field.area_ha).toFixed(2)} ha, uprawa: ${cropName}${notes}
+    <div class="field-actions">
+      <button onclick="startEditField(${field.id});event.stopPropagation();">Edytuj</button>
+      <button onclick="deleteField(${field.id});event.stopPropagation();">Usuń</button>
+    </div>
+  `;
+  ...
+});
 
 // wybierz crop_name dla bieżącego roku, jeśli jest wpis w field_seasons
 if (field.field_seasons && field.field_seasons.length) {
@@ -1262,12 +1277,21 @@ const { data, error } = await supabaseClient
   }
 
   body.innerHTML = '';
-  data.forEach(field=>{
-let cropName = '—';
-const seasonRow = (field.field_seasons || []).find(s => s.season_year === currentYear);
-if (seasonRow && seasonRow.crop_name) {
-  cropName = seasonRow.crop_name;
-}
+data.forEach(field=>{
+  let cropName = '—';
+  if (field.crops && field.crops.name) {
+    cropName = field.crops.name;
+  }
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
+    <td>${cropName}</td>
+    <td>${field.name}</td>
+    <td>${Number(field.area_ha).toFixed(2)}</td>
+  `;
+  body.appendChild(tr);
+});
 
 const tr = document.createElement('tr');
 tr.innerHTML = `
