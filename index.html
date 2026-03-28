@@ -310,7 +310,7 @@ button.primary:hover{background:#15803d}
     <button onclick="showTab('warehouse')">Magazyn</button>
     <button onclick="showTab('machines')">Maszyny</button>
     <button onclick="showTab('seasons')">Sezony</button>
-    <button onclick="showSection('rainSection')">Opady</button>
+    <button onclick="showTab('rain')">Opady</button>
   </div>
 
   <!-- START -->
@@ -681,7 +681,7 @@ button.primary:hover{background:#15803d}
     </div>
   </div>
 
-<div id="rainSection" style="display:none; padding: 10px;">
+<div id="rain" class="section">
     <h2>Opady</h2>
 
     <h3>Dzisiejsze opady</h3>
@@ -834,22 +834,15 @@ function showTab(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelector(`.tabs button[onclick="showTab('${id}')"]`).classList.add('active');
   document.getElementById(id).classList.add('active');
-  if(id === 'seasons') loadSeasonSummary();
-}
 
-
- function showSection(id) {
-  const sections = ['startSection','fieldsSection','warehouseSection','machinesSection','ordersSection','rainSection'];
-  sections.forEach(secId => {
-    const el = document.getElementById(secId);
-    if (!el) return;
-    el.style.display = (secId === id) ? 'block' : 'none';
-  });
-
-  if (id === 'rainSection') {
+  if(id === 'seasons') {
+    loadSeasonSummary();
+  } else if (id === 'rain') {
     loadRainData();
   }
 }
+
+
       
 /* MAPA */
 
