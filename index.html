@@ -1676,8 +1676,8 @@ async function loadRainData() {
 
   const { data, error } = await supabaseClient
     .from('rainmeasurements')
-    .select('*')
-    .order('id', { ascending: true });
+    .select('created_at, amount_mm')
+    .order('created_at', { ascending: true });
 
   if (error) {
     console.error('Błąd ładowania opadów', error);
