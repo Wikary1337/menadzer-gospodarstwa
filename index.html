@@ -2372,7 +2372,7 @@ async function saveService(){
 
   const { error } = await supabaseClient
     .from('machine_services')
-    .insert([{ machine_id:machineId, service_date:date, odo_at_service:odo, note:fullNote }]);
+    .insert([{ machine_id:machineId, service_date:date, odometer_at_service:odo, note:fullNote }]);
   if(error){
     alert('Błąd zapisu serwisu');
     console.log('Service save error', error);
@@ -2395,7 +2395,7 @@ async function loadMachineServices(machineId){
 
   const { data, error } = await supabaseClient
     .from('machine_services')
-    .select('id,service_date,odo_at_service,note')
+    .select('id,service_date,odometer_at_service,note')
     .eq('machine_id', machineId)
     .order('service_date',{ascending:false});
 
@@ -2431,7 +2431,7 @@ async function loadMachineServices(machineId){
 
     div.innerHTML = `
       <div class="service-entry-header">
-        <span><strong>${s.service_date}</strong> – przebieg: ${s.odo_at_service ?? '-'} </span>
+        <span><strong>${s.service_date}</strong> – przebieg: ${s.odometer_at_service ?? '-'} </span>
         <span class="small">ID: ${s.id}</span>
       </div>
       ${chipsHtml}
