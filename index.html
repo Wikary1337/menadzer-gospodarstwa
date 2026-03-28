@@ -847,7 +847,7 @@ function showTab(id){
 /* MAPA */
 
 function initMap(){
-  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 13);
+  map = L.map('map').setView([KURZNIE_LAT, KURZNIE_LON], 15);
 
  L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -970,10 +970,21 @@ async function loadFields(){
   container.textContent = 'Ładowanie...';
 
   const { data, error } = await supabaseClient
-    .from('fields')
-    .select('id,name,area_ha,current_crop_id,geometry,notes')
-    .order('id', { ascending: true });
-
+  .from('fields')
+  .select(`
+    id,
+    name,
+    area_ha,
+    current_crop_id,
+    geometry,
+    notes,
+    field_seasons (
+      season_year,
+      crop_name
+    )
+  `)
+  .order('id', { ascending: true });
+  
   if(error){
     console.log('Fields load error', error);
     container.textContent = 'Błąd ładowania pól';
@@ -994,8 +1005,18 @@ async function loadFields(){
   data.forEach(field => {
     const div = document.createElement('div');
     div.className = 'field-item';
-    const cropName = '—';
-    const color = getCropColor(cropName);
+    let cropName = '—';
+const currentYear = new Date().getFullYear();
+
+// wybierz crop_name dla bieżącego roku, jeśli jest wpis w field_seasons
+if (field.field_seasons && field.field_seasons.length) {
+  const seasonRow = field.field_seasons.find(s => s.season_year === currentYear);
+  if (seasonRow && seasonRow.crop_name) {
+    cropName = seasonRow.crop_name;
+  }
+}
+
+const color = getCropColor(cropName);
 
     const notes = field.notes ? `, uwagi: ${field.notes}` : '';
 
@@ -1215,10 +1236,20 @@ async function saveField(){
 
 async function loadTreatmentFields(){
   const body = document.getElementById('treatFieldsList');
-  const { data, error } = await supabaseClient
-    .from('fields')
-    .select('id,name,area_ha')
-    .order('name',{ascending:true});
+  const currentYear = new Date().getFullYear();
+
+const { data, error } = await supabaseClient
+  .from('fields')
+  .select(`
+    id,
+    name,
+    area_ha,
+    field_seasons (
+      season_year,
+      crop_name
+    )
+  `)
+  .order('name',{ascending:true});
 
   if(error){
     console.log('Load treat fields error', error);
@@ -1232,14 +1263,19 @@ async function loadTreatmentFields(){
 
   body.innerHTML = '';
   data.forEach(field=>{
-    const cropName = '—';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
-      <td>${cropName}</td>
-      <td>${field.name}</td>
-      <td>${Number(field.area_ha).toFixed(2)}</td>
-    `;
+let cropName = '—';
+const seasonRow = (field.field_seasons || []).find(s => s.season_year === currentYear);
+if (seasonRow && seasonRow.crop_name) {
+  cropName = seasonRow.crop_name;
+}
+
+const tr = document.createElement('tr');
+tr.innerHTML = `
+  <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
+  <td>${cropName}</td>
+  <td>${field.name}</td>
+  <td>${Number(field.area_ha).toFixed(2)}</td>
+`;
     body.appendChild(tr);
   });
 }
@@ -2351,10 +2387,16 @@ async function loadSeasonSummary(){
     return;
   }
 
-  const { data, error } = await supabaseClient
-    .from('field_seasons')
-    .select('field_id,season_year,crop_name,area_ha')
-    .eq('season_year', year);
+ const { data, error } = await supabaseClient
+  .from('field_seasons')
+  .select(`
+    crop_name,
+    field:fields (
+      id,
+      area_ha
+    )
+  `)
+  .eq('season_year', year);
 
   if(error){
     console.log('Season summary error', error);
@@ -2371,11 +2413,14 @@ async function loadSeasonSummary(){
   }
 
   const totals = {};
-  data.forEach(row=>{
-    const crop = row.crop_name || '—';
-    if(!totals[crop]) totals[crop] = 0;
-    totals[crop] += Number(row.area_ha || 0);
-  });
+data.forEach(row => {
+  // pomiń wpisy bez istniejącego pola
+  if (!row.field || row.field.area_ha == null) return;
+
+  const crop = row.crop_name || '—';
+  if (!totals[crop]) totals[crop] = 0;
+  totals[crop] += Number(row.field.area_ha || 0);
+});
 
   let html = '<ul>';
   Object.entries(totals).forEach(([crop,area])=>{
