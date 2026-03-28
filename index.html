@@ -1077,24 +1077,22 @@ async function loadFields(){
     map.setView([KURZNIE_LAT, KURZNIE_LON], 15);
   }
 }
-/* ZABIEGI */
+/* ZABIEGI – pola w tabeli */
 
 async function loadTreatmentFields(){
   const body = document.getElementById('treatFieldsList');
-  const currentYear = new Date().getFullYear();
 
-const { data, error } = await supabaseClient
-  .from('fields')
-  .select(`
-    id,
-    name,
-    area_ha,
-    field_seasons (
-      season_year,
-      crop_name
-    )
-  `)
-  .order('name',{ascending:true});
+  const { data, error } = await supabaseClient
+    .from('fields')
+    .select(`
+      id,
+      name,
+      area_ha,
+      crops (
+        name
+      )
+    `)
+    .order('name',{ascending:true});
 
   if(error){
     console.log('Load treat fields error', error);
@@ -1107,21 +1105,22 @@ const { data, error } = await supabaseClient
   }
 
   body.innerHTML = '';
-data.forEach(field=>{
-  let cropName = '—';
-  if (field.crops && field.crops.name) {
-    cropName = field.crops.name;
-  }
+  data.forEach(field=>{
+    let cropName = '—';
+    if (field.crops && field.crops.name) {
+      cropName = field.crops.name;
+    }
 
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
-    <td>${cropName}</td>
-    <td>${field.name}</td>
-    <td>${Number(field.area_ha).toFixed(2)}</td>
-  `;
-  body.appendChild(tr);
-});
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
+      <td>${cropName}</td>
+      <td>${field.name}</td>
+      <td>${Number(field.area_ha).toFixed(2)}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
 
 const tr = document.createElement('tr');
 tr.innerHTML = `
