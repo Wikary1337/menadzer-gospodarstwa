@@ -1016,40 +1016,7 @@ async function loadFields(){
     }
     const color = getCropColor(cropName);
     const notes = field.notes ? `, uwagi: ${field.notes}` : '';
-    
-  function attachFieldPopup(layer, field, cropName){
-  layer.on('click', async () => {
-    let html = `<div class="popup-title">${field.name}</div>`;
-    html += `<div class="popup-row">Uprawa: ${cropName}</div>`;
-    html += `<div class="popup-row">Powierzchnia: ${Number(field.area_ha).toFixed(2)} ha</div>`;
-    if(field.notes){
-      html += `<div class="popup-row">Uwagi: ${field.notes}</div>`;
-    }
 
-    const { data: treatments, error } = await supabaseClient
-      .from('treatments')
-      .select('id,date,type');
-
-    if(!error && treatments){
-      const { data: tf, error: tfErr } = await supabaseClient
-        .from('treatment_fields')
-        .select('treatment_id,field_id')
-        .eq('field_id', field.id);
-      if(!tfErr && tf && tf.length){
-        const ids = tf.map(x=>x.treatment_id);
-        const done = treatments.filter(t=>ids.includes(t.id));
-        if(done.length){
-          html += `<div class="popup-row" style="margin-top:4px;"><strong>Zabiegi:</strong></div>`;
-          done.forEach(t=>{
-            html += `<div class="popup-row">• ${t.date} – ${t.type}</div>`;
-          });
-        }
-      }
-    }
-
-    layer.bindPopup(html).openPopup();
-  });
-}
     div.innerHTML = `
       <strong style="color:${color}">${field.name}</strong>
       – ${Number(field.area_ha).toFixed(2)} ha, uprawa: ${cropName}${notes}
@@ -1082,6 +1049,111 @@ async function loadFields(){
     map.setView([KURZNIE_LAT, KURZNIE_LON], 15);
   }
 }
+
+function attachFieldPopup(layer, field, cropName){
+  layer.on('click', async () => {
+    let html = `<div class="popup-title">${field.name}</div>`;
+    html += `<div class="popup-row">Uprawa: ${cropName}</div>`;
+    html += `<div class="popup-row">Powierzchnia: ${Number(field.area_ha).toFixed(2)} ha</div>`;
+    if(field.notes){
+      html += `<div class="popup-row">Uwagi: ${field.notes}</div>`;
+    }
+
+    const { data: treatments, error } = await supabaseClient
+      .from('treatments')
+      .select('id,date,type');
+
+    if(!error && treatments){
+      const { data: tf, error: tfErr } = await supabaseClient
+        .from('treatment_fields')
+        .select('treatment_id,field_id')
+        .eq('field_id', field.id);
+      if(!tfErr && tf && tf.length){
+        const ids = tf.map(x=>x.treatment_id);
+        const done = treatments.filter(t=>ids.includes(t.id));
+        if(done.length){
+          html += `<div class="popup-row" style="margin-top:4px;"><strong>Zabiegi:</strong></div>`;
+          done.forEach(t=>{
+            html += `<div class="popup-row">• ${t.date} – ${t.type}</div>`;
+          });
+        }
+      }
+    }
+
+    layer.bindPopup(html).openPopup();
+  });
+}
+
+async function focusFieldOnMap(fieldId){
+  const layer = fieldLayers[fieldId];
+  if(!layer) return;
+  map.fitBounds(layer.getBounds());
+  layer.fire('click');
+}
+
+async function startEditField(fieldId){
+  const { data, error } = await supabaseClient
+    .from('fields')
+    .select('*')
+    .eq('id', fieldId)
+    .single();
+  if(error || !data){
+    alert('Błąd odczytu pola');
+    return;
+  }
+  editingFieldId = fieldId;
+  document.getElementById('fieldName').value = data.name || '';
+  document.getElementById('fieldArea').value = data.area_ha || '';
+  document.getElementById('fieldNotes').value = data.notes || '';
+
+  if(data.current_crop_id){
+    document.getElementById('fieldCrop').value = data.current_crop_id;
+  }
+
+  drawnItems.clearLayers();
+  if(data.geometry){
+    const layer = L.geoJSON({
+      type:'Feature',
+      geometry:data.geometry,
+      properties:{}
+    }).getLayers()[0];
+    drawnItems.addLayer(layer);
+    map.fitBounds(layer.getBounds());
+    updateAreaFromLayer(layer);
+  }
+  alert('Tryb edycji pola – zmień dane i kliknij „Zapisz pole”.');
+}
+
+async function deleteField(fieldId){
+  const id = Number(fieldId);
+  if(!confirm('Na pewno usunąć to pole?')) return;
+
+  await supabaseClient
+    .from('field_seasons')
+    .delete()
+    .eq('field_id', id);
+
+  const { error } = await supabaseClient
+    .from('fields')
+    .delete()
+    .eq('id', id);
+
+  if(error){
+    alert('Błąd usuwania pola: ' + error.message);
+    return;
+  }
+
+  if(fieldLayers[id]){
+    map.removeLayer(fieldLayers[id]);
+    delete fieldLayers[id];
+  }
+
+  await loadFields();
+  await loadTreatmentFields();
+  await loadSeasonSummary();
+  await updateStartMetrics();
+}
+
 /* ZABieGI – pola w tabeli */
 
 async function loadTreatmentFields(){
