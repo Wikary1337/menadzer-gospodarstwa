@@ -722,25 +722,6 @@ function getCropColor(name){
   const n = (name || '').trim();
   if (CROP_COLORS[n]) return CROP_COLORS[n];
   return '#22c55e';
-
-  function getCropNameById(id){
-  if(!id) return 'brak uprawy';
-  return cropsById[id] || id; // jak extra_..., to chociaż pokaże tekst
-}
-
-// przykład w Leaflet:
-function addFieldPolygon(field){
-  const polygon = L.polygon(field.geometry, {
-    color: '#3388ff'
-  }).addTo(fieldsLayerGroup);
-
-  const cropName = getCropNameById(field.current_crop_id);
-
-  polygon.bindPopup(
-    `<b>${field.name}</b><br>` +
-    `Uprawa: ${cropName || 'brak'}<br>` +
-    `Powierzchnia: ${field.area_ha || '-'} ha`
-  );
 }
 
 /* START TAB & WEATHER */
@@ -894,8 +875,6 @@ async function searchPlace(){
 }
 
 /* UPRAWY */
-  
-let cropsById = {};
 
 async function loadCrops(){
   const select = document.getElementById('fieldCrop');
@@ -913,81 +892,16 @@ async function loadCrops(){
   }
 
   const wanted = [
-    // Zboża
-    'Pszenica ozima',
-    'Pszenica jara',
-    'Pszenżyto ozime',
-    'Pszenżyto jare',
-    'Jęczmień ozimy',
-    'Jęczmień jary',
-    'Żyto ozime',
-    'Żyto jare',
-    'Owies',
-    'Kukurydza na ziarno',
-    'Kukurydza na kiszonkę',
-    'Gryka',
-
-    // Oleiste
-    'Rzepak ozimy',
-    'Rzepak jary',
-    'Rzepik',
-    'Słonecznik',
-    'Len oleisty',
-    'Soja',
-
-    // Okopowe
-    'Ziemniaki',
-    'Burak cukrowy',
-    'Burak pastewny',
-    'Marchew pastewna',
-    'Rzepa ścierniskowa',
-    'Brukiew',
-
-    // Strączkowe / białkowe
-    'Groch',
-    'Groch siewny pastewny (peluszka)',
-    'Groch zwyczajny łuskowy',
-    'Groch zwyczajny cukrowy',
-    'Bobik',
-    'Łubin żółty',
-    'Łubin wąskolistny',
-    'Łubin biały',
-
-    // Pastewne / użytki zielone
-    'Łąka trwała',
-    'Lucerna wieloletnia',
-    'Lucerna',
-    'Koniczyna czerwona',
-    'Koniczyna biała',
-    'Mieszanka traw pastewnych',
-
-    // Warzywa polowe (zbiorczo – jak nie chcesz rozbijać)
-    'Warzywa kapustne',
-    'Warzywa korzeniowe',
-    'Warzywa liściowe',
-    'Warzywa cebulowe',
-    'Warzywa dyniowate',
-
-    // Sady / jagodowe (jeśli chcesz je też mieć na liście pól)
-    'Jabłonie',
-    'Grusze',
-    'Śliwy',
-    'Czereśnie',
-    'Wiśnie',
-    'Truskawki',
-    'Maliny',
-    'Porzeczki',
-    'Borówka wysoka'
+    'Pszenica ozima','Pszenica jara','Kukurydza','Kukurydza na kiszonke',
+    'Jęczmień ozimy','Jęczmień jary','Żyto ozime','Owies',
+    'Rzepak ozimy','Soja','Groch','Burak cukrowy',
+    'Ziemniaki','Łąka trwała','Lucerna wieloletnia'
   ];
-
- const filtered = [];
-  cropsById = {}; // reset
-
+  const filtered = [];
   wanted.forEach(name=>{
     const row = (data || []).find(c=>c.name===name);
-    const rec = row || {id:`extra_${name}`, name};
-    filtered.push(rec);
-    cropsById[rec.id] = rec.name;
+    if(row) filtered.push(row);
+    else filtered.push({id:`extra_${name}`,name});
   });
 
   select.innerHTML = '<option value="">-- wybierz uprawe --</option>';
@@ -998,7 +912,7 @@ async function loadCrops(){
     select.appendChild(opt);
   });
 }
-  
+
 /* POLA */
 
 async function loadFields(){
@@ -1067,24 +981,6 @@ async function loadFields(){
   }
 }
 
-  function getCropNameById(id){
-  if(!id) return 'brak uprawy';
-  return cropsById[id] || id; // jak extra_..., to chociaż pokaże tekst
-}
-
-// przykład w Leaflet:
-function addFieldPolygon(field){
-  const polygon = L.polygon(field.geometry, {
-    color: '#3388ff'
-  }).addTo(fieldsLayerGroup);
-
-  const cropName = getCropNameById(field.current_crop_id);
-
-  polygon.bindPopup(
-    `<b>${field.name}</b><br>` +
-    `Uprawa: ${cropName || 'brak'}<br>` +
-    `Powierzchnia: ${field.area_ha || '-'} ha`
- 
 function attachFieldPopup(layer, field, cropName){
   layer.on('click', async () => {
     let html = `<div class="popup-title">${field.name}</div>`;
@@ -2200,7 +2096,6 @@ async function saveService(){
 
 async function loadMachineServices(machineId){
   const box = document.getElementById('servicesList');
-
   if(!machineId){
     box.textContent = 'Wybierz maszynę, aby zobaczyć historię serwisów.';
     return;
@@ -2210,45 +2105,35 @@ async function loadMachineServices(machineId){
     .from('machine_services')
     .select('id,service_date,odo_at_service,note')
     .eq('machine_id', machineId)
-    .order('service_date', { ascending:false });
+    .order('service_date',{ascending:false});
 
   if(error){
     console.log('Services load error', error);
     box.textContent = 'Błąd ładowania serwisów';
     return;
   }
-
-  if(!data || data.length === 0){
+  if(!data || data.length===0){
     box.textContent = 'Brak zapisanych serwisów dla tej maszyny.';
     return;
   }
 
   box.innerHTML = '';
-
-  data.forEach(s => {
+  data.forEach(s=>{
     const div = document.createElement('div');
     div.className = 'service-entry';
-
-    const restNote = s.note || '';
-    const match = restNote.match(/^\[(.+?)\]\s*(.*)$/); // bez podwójnych backslashy
     const chips = [];
+    const restNote = (s.note || '');
+    const match = restNote.match(/^\[(.+?)\]\s*(.*)$/);
     let cleanNote = restNote;
-
     if(match){
-      chips.push(
-        ...match[1]
-          .split(',')
-          .map(x => x.trim())
-          .filter(Boolean)
-      );
+      chips.push(...match[1].split(',').map(x=>x.trim()).filter(Boolean));
       cleanNote = match[2] || '';
     }
 
     let chipsHtml = '';
     if(chips.length){
-      chipsHtml =
-        '<div class="service-chips">' +
-        chips.map(c => `<span class="service-chip">${c}</span>`).join('') +
+      chipsHtml = '<div class="service-chips">' +
+        chips.map(c=>`<span class="service-chip">${c}</span>`).join('') +
         '</div>';
     }
 
@@ -2260,7 +2145,6 @@ async function loadMachineServices(machineId){
       ${chipsHtml}
       <div class="small" style="margin-top:4px;">${cleanNote || 'Brak dodatkowych informacji.'}</div>
     `;
-
     box.appendChild(div);
   });
 }
