@@ -1672,24 +1672,19 @@ document.addEventListener('change', e=>{
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
 
 async function loadRainData() {
-    const now = new Date();
-    const daysBack = 60; // ile dni wstecz pobierać z bazy
-    const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-
-    // ISO string w formacie zgodnym z timestamptz
-    const fromIso = fromDate.toISOString();
-
-    // pobieramy ostatnie 60 dni, resztę filtrujemy w JS
-    const { data, error } = await supabaseClient
+const { data, error } = await supabaseClient
         .from('rainmeasurements')
         .select('created_at, amount_mm')
-        .gte('created_at', fromIso)
         .order('created_at', { ascending: true });
 
     if (error) {
         console.error('Błąd ładowania opadów', error);
         return;
     }
+
+    console.log('Rain rows:', data); // zobaczysz w konsoli
+    renderRainTables(data || []);
+}
 
     renderRainTables(data || []);
 }
