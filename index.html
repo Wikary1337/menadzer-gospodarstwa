@@ -1154,6 +1154,100 @@ async function deleteField(fieldId){
   await updateStartMetrics();
 }
 
+  async function saveField(){
+  console.log('saveField start, editingFieldId =', editingFieldId);
+
+  const name = document.getElementById('fieldName').value.trim();
+  const area = parseFloat(document.getElementById('fieldArea').value);
+  const cropId = document.getElementById('fieldCrop').value || null;
+  const notes = document.getElementById('fieldNotes').value.trim();
+  const seasonYear = parseInt(document.getElementById('fieldSeasonYear').value || '0');
+
+  if(!name){
+    alert('Podaj nazwę pola');
+    return;
+  }
+
+  // przy nowym polu wymagamy narysowania, przy edycji korzystamy z istniejącej geometrii
+  if(isNaN(area) || (!currentPolygonGeoJSON && !editingFieldId)){
+    alert('Narysuj pole na mapie, aby policzyć powierzchnię');
+    return;
+  }
+
+  const field = {
+    name,
+    area_ha: area,
+    geometry: currentPolygonGeoJSON,    // przy edycji będzie to nowa geometria, jeśli ją zmienisz
+    current_crop_id: cropId ? Number(cropId) : null,
+    notes
+  };
+
+  let error;
+  let fieldId;
+
+  if(editingFieldId){
+    // jeśli nie zmieniałeś geometrii, zostaw starą (żeby nie nadpisać nullem)
+    if (!currentPolygonGeoJSON) {
+      delete field.geometry;
+    }
+
+    ({ error } = await supabaseClient
+      .from('fields')
+      .update(field)
+      .eq('id', editingFieldId));
+    fieldId = editingFieldId;
+  }else{
+    const res = await supabaseClient
+      .from('fields')
+      .insert([field])
+      .select('id')
+      .single();
+    error = res.error;
+    fieldId = res.data?.id;
+  }
+
+  if(error){
+    console.log('Insert/Update field error', error);
+    alert('Błąd zapisu pola');
+    return;
+  }
+
+  if(seasonYear && cropId){
+    const cropName = document
+      .querySelector(`#fieldCrop option[value="${cropId}"]`)
+      ?.textContent || '';
+    await supabaseClient
+      .from('field_seasons')
+      .delete()
+      .eq('field_id', fieldId)
+      .eq('season_year', seasonYear);
+
+    await supabaseClient
+      .from('field_seasons')
+      .insert([{
+        field_id: fieldId,
+        season_year: seasonYear,
+        crop_name: cropName,
+        area_ha: area
+      }]);
+  }
+
+  alert(editingFieldId ? 'Pole zaktualizowane' : 'Pole zapisane');
+
+  editingFieldId = null;
+  document.getElementById('fieldName').value = '';
+  document.getElementById('fieldArea').value = '';
+  document.getElementById('fieldCrop').value = '';
+  document.getElementById('fieldNotes').value = '';
+  drawnItems.clearLayers();
+  currentPolygonGeoJSON = null;
+
+  await loadFields();
+  await loadTreatmentFields();
+  await loadSeasonSummary();
+  await updateStartMetrics();
+}
+  
 /* ZABieGI – pola w tabeli */
 
 async function loadTreatmentFields(){
