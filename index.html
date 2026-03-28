@@ -1057,7 +1057,6 @@ const color = getCropColor(cropName);
       fieldLayers[field.id] = layer;
       bounds.extend(layer.getBounds());
     }
-  });
 
   if(bounds.isValid()){
     map.fitBounds(bounds.pad(0.2));
