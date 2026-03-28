@@ -310,6 +310,7 @@ button.primary:hover{background:#15803d}
     <button onclick="showTab('warehouse')">Magazyn</button>
     <button onclick="showTab('machines')">Maszyny</button>
     <button onclick="showTab('seasons')">Sezony</button>
+    <button onclick="showSection('rainSection')">Opady</button>
   </div>
 
   <!-- START -->
@@ -680,8 +681,50 @@ button.primary:hover{background:#15803d}
     </div>
   </div>
 
-</div>
+<div id="rainSection" style="display:none; padding: 10px;">
+    <h2>Opady</h2>
 
+    <h3>Dzisiejsze opady</h3>
+    <p>Razem: <span id="rainTodayTotal">0.0</span> mm</p>
+    <table border="1" cellpadding="4" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Godzina</th>
+                <th>Opad [mm]</th>
+            </tr>
+        </thead>
+        <tbody id="rainTodayTableBody">
+            <!-- wypełnia JS -->
+        </tbody>
+    </table>
+
+    <h3>Ostatnie 7 dni</h3>
+    <table border="1" cellpadding="4" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Opad [mm]</th>
+            </tr>
+        </thead>
+        <tbody id="rain7daysTableBody">
+            <!-- wypełnia JS -->
+        </tbody>
+    </table>
+
+    <h3>Opady miesięczne</h3>
+    <table border="1" cellpadding="4" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Miesiąc</th>
+                <th>Opad [mm]</th>
+            </tr>
+        </thead>
+        <tbody id="rainMonthlyTableBody">
+            <!-- wypełnia JS -->
+        </tbody>
+    </table>
+</div>
+  
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.js"></script>
@@ -794,6 +837,18 @@ function showTab(id){
   if(id === 'seasons') loadSeasonSummary();
 }
 
+
+ function showSection(id) {
+    const sections = document.querySelectorAll('.main-section'); // jeśli tak klasujesz
+    sections.forEach(sec => {
+        sec.style.display = (sec.id === id) ? 'block' : 'none';
+    });
+
+    if (id === 'rainSection') {
+        loadRainData();
+    }
+}
+  
 /* MAPA */
 
 function initMap(){
@@ -1740,6 +1795,152 @@ document.addEventListener('change', e=>{
   }
 });
 
+//  O P A D Y  –  ŁADOWANIE I AGREGACJA
+
+async function loadRainData() {
+    const now = new Date();
+    const daysBack = 60; // ile dni wstecz pobierać z bazy
+    const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+
+    // ISO string w formacie zgodnym z timestamptz
+    const fromIso = fromDate.toISOString();
+
+    // pobieramy ostatnie 60 dni, resztę filtrujemy w JS
+    const { data, error } = await supabaseClient
+        .from('rainmeasurements')
+        .select('created_at, amount_mm')
+        .gte('created_at', fromIso)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Błąd ładowania opadów', error);
+        return;
+    }
+
+    renderRainTables(data || []);
+}
+
+function renderRainTables(rows) {
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // pomocnicze mapy: klucz -> suma mm
+    const hourlyToday = {};  // "HH:00" -> mm
+    const dailyLast7 = {};   // "YYYY-MM-DD" -> mm
+    const monthlyTotals = {}; // "YYYY-MM" -> mm
+
+    const msInDay = 24 * 60 * 60 * 1000;
+    const sevenDaysAgo = new Date(today.getTime() - 6 * msInDay); // 6, aby było 7 dni łącznie
+
+    rows.forEach(row => {
+        const ts = new Date(row.created_at);
+        const mm = Number(row.amount_mm) || 0;
+
+        const dateStr = ts.toISOString().slice(0, 10); // YYYY-MM-DD
+        const hourStr = ts.toISOString().slice(11, 13) + ':00'; // HH:00
+        const monthStr = ts.toISOString().slice(0, 7); // YYYY-MM
+
+        // Dzisiejsze – agregacja godzinowa
+        if (dateStr === todayStr) {
+            hourlyToday[hourStr] = (hourlyToday[hourStr] || 0) + mm;
+        }
+
+        // Ostatnie 7 dni – agregacja dobowa
+        if (ts >= sevenDaysAgo && ts <= today) {
+            dailyLast7[dateStr] = (dailyLast7[dateStr] || 0) + mm;
+        }
+
+        // Miesięczne – agregacja po YYYY-MM
+        monthlyTotals[monthStr] = (monthlyTotals[monthStr] || 0) + mm;
+    });
+
+    renderRainToday(hourlyToday);
+    renderRainLast7(dailyLast7);
+    renderRainMonthly(monthlyTotals);
+}
+
+function renderRainToday(hourlyToday) {
+    const tbody = document.getElementById('rainTodayTableBody');
+    const totalSpan = document.getElementById('rainTodayTotal');
+    if (!tbody || !totalSpan) return;
+
+    tbody.innerHTML = '';
+
+    const hours = Object.keys(hourlyToday).sort(); // 00:00, 01:00, ...
+    let total = 0;
+
+    hours.forEach(h => {
+        const mm = hourlyToday[h];
+        total += mm;
+
+        const tr = document.createElement('tr');
+
+        const tdHour = document.createElement('td');
+        tdHour.textContent = h;
+
+        const tdMm = document.createElement('td');
+        tdMm.textContent = mm.toFixed(2);
+
+        tr.appendChild(tdHour);
+        tr.appendChild(tdMm);
+        tbody.appendChild(tr);
+    });
+
+    totalSpan.textContent = total.toFixed(2);
+}
+
+function renderRainLast7(dailyLast7) {
+    const tbody = document.getElementById('rain7daysTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const days = Object.keys(dailyLast7).sort(); // rosnąco po dacie
+
+    days.forEach(d => {
+        const mm = dailyLast7[d];
+
+        const tr = document.createElement('tr');
+
+        const tdDate = document.createElement('td');
+        tdDate.textContent = d;
+
+        const tdMm = document.createElement('td');
+        tdMm.textContent = mm.toFixed(2);
+
+        tr.appendChild(tdDate);
+        tr.appendChild(tdMm);
+        tbody.appendChild(tr);
+    });
+}
+
+function renderRainMonthly(monthlyTotals) {
+    const tbody = document.getElementById('rainMonthlyTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const months = Object.keys(monthlyTotals).sort(); // YYYY-MM
+
+    months.forEach(m => {
+        const mm = monthlyTotals[m];
+
+        const tr = document.createElement('tr');
+
+        const tdMonth = document.createElement('td');
+        tdMonth.textContent = m; // np. 2026-03
+
+        const tdMm = document.createElement('td');
+        tdMm.textContent = mm.toFixed(2);
+
+        tr.appendChild(tdMonth);
+        tr.appendChild(tdMm);
+        tbody.appendChild(tr);
+    });
+}
+
+  // tutaj zrób render listy / tabeli / wykresu
+  console.log(data);
+}
+  
 /* MAGAZYN */
 
 async function ensureFuelRow(){
