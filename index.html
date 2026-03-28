@@ -310,7 +310,7 @@ button.primary:hover{background:#15803d}
     <button onclick="showTab('warehouse')">Magazyn</button>
     <button onclick="showTab('machines')">Maszyny</button>
     <button onclick="showTab('seasons')">Sezony</button>
-    <button onclick="showTab('rainSection')">Opady</button>
+    <button onclick="showSection('rainSection')">Opady</button>
   </div>
 
   <!-- START -->
@@ -839,16 +839,18 @@ function showTab(id){
 
 
  function showSection(id) {
-    const sections = document.querySelectorAll('.main-section'); // jeśli tak klasujesz
-    sections.forEach(sec => {
-        sec.style.display = (sec.id === id) ? 'block' : 'none';
-    });
+  const sections = ['startSection','fieldsSection','warehouseSection','machinesSection','ordersSection','rainSection'];
+  sections.forEach(secId => {
+    const el = document.getElementById(secId);
+    if (!el) return;
+    el.style.display = (secId === id) ? 'block' : 'none';
+  });
 
-    if (id === 'rainSection') {
-        loadRainData();
-    }
+  if (id === 'rainSection') {
+    loadRainData();
+  }
 }
-  
+      
 /* MAPA */
 
 function initMap(){
