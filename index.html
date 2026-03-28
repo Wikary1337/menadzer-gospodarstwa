@@ -684,13 +684,13 @@ button.primary:hover{background:#15803d}
 <div id="rain" class="section">
     <h2>Opady</h2>
 
-    <h3>Dzisiejsze opady</h3>
-    <p>Razem: <span id="rainTodayTotal">0.0</span> mm</p>
+      <h3>Dzisiejsze opady</h3>
+      <p>Razem: <span id="rainTodayTotal">0.0</span> l/m²</p>
     <table border="1" cellpadding="4" cellspacing="0">
         <thead>
             <tr>
                 <th>Godzina</th>
-                <th>Opad [mm]</th>
+                <th>Opad [l/m²]</th>
             </tr>
         </thead>
         <tbody id="rainTodayTableBody">
@@ -703,7 +703,7 @@ button.primary:hover{background:#15803d}
         <thead>
             <tr>
                 <th>Data</th>
-                <th>Opad [mm]</th>
+                <th>Opad [l/m²]</th>
             </tr>
         </thead>
         <tbody id="rain7daysTableBody">
@@ -716,7 +716,7 @@ button.primary:hover{background:#15803d}
         <thead>
             <tr>
                 <th>Miesiąc</th>
-                <th>Opad [mm]</th>
+                <th>Opad [l/m²]</th>
             </tr>
         </thead>
         <tbody id="rainMonthlyTableBody">
@@ -1708,9 +1708,9 @@ function renderRainTables(rows) {
         const hourStr = ts.toISOString().slice(11, 13) + ':00'; // HH:00
         const monthStr = ts.toISOString().slice(0, 7); // YYYY-MM
 
-        // Dzisiejsze – agregacja godzinowa
+       // Dzisiejsze – ostatni pomiar w danej godzinie
         if (dateStr === todayStr) {
-            hourlyToday[hourStr] = (hourlyToday[hourStr] || 0) + mm;
+        hourlyToday[hourStr] = mm;
         }
 
         // Ostatnie 7 dni – agregacja dobowa
