@@ -1112,7 +1112,7 @@ async function loadTreatmentFields(){
       cropName = field.crops.name;
     }
 
-    const tr = document.createElement('tr');
+       const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
       <td>${cropName}</td>
@@ -1122,16 +1122,6 @@ async function loadTreatmentFields(){
     body.appendChild(tr);
   });
 }
-
-const tr = document.createElement('tr');
-tr.innerHTML = `
-  <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
-  <td>${cropName}</td>
-  <td>${field.name}</td>
-  <td>${Number(field.area_ha).toFixed(2)}</td>
-    `;
-    body.appendChild(tr);
-  });
 
 async function loadWarehouseForTreatments(){
   const { data, error } = await supabaseClient
