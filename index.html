@@ -1672,20 +1672,21 @@ document.addEventListener('change', e=>{
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
 
 async function loadRainData() {
-const { data, error } = await supabaseClient
-        .from('rainmeasurements')
-        .select('created_at, amount_mm')
-        .order('created_at', { ascending: true });
+  console.log('loadRainData start');
 
-    if (error) {
-        console.error('Błąd ładowania opadów', error);
-        return;
-    }
+  const { data, error } = await supabaseClient
+    .from('rainmeasurements')
+    .select('*')
+    .order('id', { ascending: true });
 
-    console.log('Rain rows:', data); // zobaczysz w konsoli
-    renderRainTables(data || []);
+  if (error) {
+    console.error('Błąd ładowania opadów', error);
+    return;
+  }
+
+  console.log('Rain rows:', data);
+  renderRainTables(data || []);
 }
-
 
 function renderRainTables(rows) {
     const today = new Date();
