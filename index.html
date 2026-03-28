@@ -1011,7 +1011,40 @@ async function loadFields(){
     }
     const color = getCropColor(cropName);
     const notes = field.notes ? `, uwagi: ${field.notes}` : '';
+    
+  function attachFieldPopup(layer, field, cropName){
+  layer.on('click', async () => {
+    let html = `<div class="popup-title">${field.name}</div>`;
+    html += `<div class="popup-row">Uprawa: ${cropName}</div>`;
+    html += `<div class="popup-row">Powierzchnia: ${Number(field.area_ha).toFixed(2)} ha</div>`;
+    if(field.notes){
+      html += `<div class="popup-row">Uwagi: ${field.notes}</div>`;
+    }
 
+    const { data: treatments, error } = await supabaseClient
+      .from('treatments')
+      .select('id,date,type');
+
+    if(!error && treatments){
+      const { data: tf, error: tfErr } = await supabaseClient
+        .from('treatment_fields')
+        .select('treatment_id,field_id')
+        .eq('field_id', field.id);
+      if(!tfErr && tf && tf.length){
+        const ids = tf.map(x=>x.treatment_id);
+        const done = treatments.filter(t=>ids.includes(t.id));
+        if(done.length){
+          html += `<div class="popup-row" style="margin-top:4px;"><strong>Zabiegi:</strong></div>`;
+          done.forEach(t=>{
+            html += `<div class="popup-row">• ${t.date} – ${t.type}</div>`;
+          });
+        }
+      }
+    }
+
+    layer.bindPopup(html).openPopup();
+  });
+}
     div.innerHTML = `
       <strong style="color:${color}">${field.name}</strong>
       – ${Number(field.area_ha).toFixed(2)} ha, uprawa: ${cropName}${notes}
