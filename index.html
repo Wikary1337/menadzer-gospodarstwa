@@ -970,21 +970,20 @@ async function loadFields(){
   container.textContent = 'Ładowanie...';
 
   const { data, error } = await supabaseClient
-  .from('fields')
-  .select(`
-    id,
-    name,
-    area_ha,
-    current_crop_id,
-    geometry,
-    notes,
-    field_seasons (
-      season_year,
-      crop_name
-    )
-  `)
-  .order('id', { ascending: true });
-  
+    .from('fields')
+    .select(`
+      id,
+      name,
+      area_ha,
+      current_crop_id,
+      geometry,
+      notes,
+      crops (
+        name
+      )
+    `)
+    .order('id', { ascending: true });
+
   if(error){
     console.log('Fields load error', error);
     container.textContent = 'Błąd ładowania pól';
@@ -1002,40 +1001,20 @@ async function loadFields(){
   const bounds = L.latLngBounds();
   container.innerHTML = '';
 
- data.forEach(field => {
-  const div = document.createElement('div');
-  div.className = 'field-item';
+  data.forEach(field => {
+    const div = document.createElement('div');
+    div.className = 'field-item';
 
-  let cropName = '—';
-  if (field.crops && field.crops.name) {
-    cropName = field.crops.name;
-  }
-  const color = getCropColor(cropName);
-  const notes = field.notes ? `, uwagi: ${field.notes}` : '';
-
-  div.innerHTML = `
-    <strong style="color:${color}">${field.name}</strong> – ${Number(field.area_ha).toFixed(2)} ha, uprawa: ${cropName}${notes}
-    <div class="field-actions">
-      <button onclick="startEditField(${field.id});event.stopPropagation();">Edytuj</button>
-      <button onclick="deleteField(${field.id});event.stopPropagation();">Usuń</button>
-    </div>
-  `;
-});
-
-// wybierz crop_name dla bieżącego roku, jeśli jest wpis w field_seasons
-if (field.field_seasons && field.field_seasons.length) {
-  const seasonRow = field.field_seasons.find(s => s.season_year === currentYear);
-  if (seasonRow && seasonRow.crop_name) {
-    cropName = seasonRow.crop_name;
-  }
-}
-
-const color = getCropColor(cropName);
-
+    let cropName = '—';
+    if (field.crops && field.crops.name) {
+      cropName = field.crops.name;
+    }
+    const color = getCropColor(cropName);
     const notes = field.notes ? `, uwagi: ${field.notes}` : '';
 
     div.innerHTML = `
-      <strong style="color:${color}">${field.name}</strong> – ${Number(field.area_ha).toFixed(2)} ha, uprawa: ${cropName}${notes}
+      <strong style="color:${color}">${field.name}</strong>
+      – ${Number(field.area_ha).toFixed(2)} ha, uprawa: ${cropName}${notes}
       <div class="field-actions">
         <button onclick="startEditField(${field.id});event.stopPropagation();">Edytuj</button>
         <button onclick="deleteField(${field.id});event.stopPropagation();">Usuń</button>
@@ -1057,194 +1036,14 @@ const color = getCropColor(cropName);
       fieldLayers[field.id] = layer;
       bounds.extend(layer.getBounds());
     }
+  });
 
   if(bounds.isValid()){
     map.fitBounds(bounds.pad(0.2));
   }else{
-    map.setView([KURZNIE_LAT, KURZNIE_LON], 13);
+    map.setView([KURZNIE_LAT, KURZNIE_LON], 15);
   }
 }
-
-function attachFieldPopup(layer, field, cropName){
-  layer.on('click', async () => {
-    let html = `<div class="popup-title">${field.name}</div>`;
-    html += `<div class="popup-row">Uprawa: ${cropName}</div>`;
-    html += `<div class="popup-row">Powierzchnia: ${Number(field.area_ha).toFixed(2)} ha</div>`;
-    if(field.notes){
-      html += `<div class="popup-row">Uwagi: ${field.notes}</div>`;
-    }
-
-    const { data: treatments, error } = await supabaseClient
-      .from('treatments')
-      .select('id,date,type');
-
-    if(!error && treatments){
-      const { data: tf, error: tfErr } = await supabaseClient
-        .from('treatment_fields')
-        .select('treatment_id,field_id')
-        .eq('field_id', field.id);
-      if(!tfErr && tf && tf.length){
-        const ids = tf.map(x=>x.treatment_id);
-        const done = treatments.filter(t=>ids.includes(t.id));
-        if(done.length){
-          html += `<div class="popup-row" style="margin-top:4px;"><strong>Zabiegi:</strong></div>`;
-          done.forEach(t=>{
-            html += `<div class="popup-row">• ${t.date} – ${t.type}</div>`;
-          });
-        }
-      }
-    }
-
-    layer.bindPopup(html).openPopup();
-  });
-}
-
-async function focusFieldOnMap(fieldId){
-  const layer = fieldLayers[fieldId];
-  if(!layer) return;
-  map.fitBounds(layer.getBounds());
-  layer.fire('click');
-}
-
-async function startEditField(fieldId){
-  const { data, error } = await supabaseClient
-    .from('fields')
-    .select('*')
-    .eq('id', fieldId)
-    .single();
-  if(error || !data){
-    alert('Błąd odczytu pola');
-    return;
-  }
-  editingFieldId = fieldId;
-  document.getElementById('fieldName').value = data.name || '';
-  document.getElementById('fieldArea').value = data.area_ha || '';
-  document.getElementById('fieldNotes').value = data.notes || '';
-
-  if(data.current_crop_id){
-    document.getElementById('fieldCrop').value = data.current_crop_id;
-  }
-
-  drawnItems.clearLayers();
-  if(data.geometry){
-    const layer = L.geoJSON({
-      type:'Feature',
-      geometry:data.geometry,
-      properties:{}
-    }).getLayers()[0];
-    drawnItems.addLayer(layer);
-    map.fitBounds(layer.getBounds());
-    updateAreaFromLayer(layer);
-  }
-  alert('Tryb edycji pola – zmień dane i kliknij „Zapisz pole”.');
-}
-
-async function deleteField(fieldId){
-  const id = Number(fieldId);
-  if(!confirm('Na pewno usunąć to pole?')) return;
-
-  await supabaseClient
-    .from('field_seasons')
-    .delete()
-    .eq('field_id', id);
-
-  const { error } = await supabaseClient
-    .from('fields')
-    .delete()
-    .eq('id', id);
-
-  if(error){
-    alert('Błąd usuwania pola: ' + error.message);
-    return;
-  }
-
-  if(fieldLayers[id]){
-    map.removeLayer(fieldLayers[id]);
-    delete fieldLayers[id];
-  }
-
-  await loadFields();
-  await loadTreatmentFields();
-  await loadSeasonSummary();
-  await updateStartMetrics();
-}
-
-async function saveField(){
-  const name = document.getElementById('fieldName').value.trim();
-  const area = parseFloat(document.getElementById('fieldArea').value);
-  const cropId = document.getElementById('fieldCrop').value || null;
-  const notes = document.getElementById('fieldNotes').value.trim();
-  const seasonYear = parseInt(document.getElementById('fieldSeasonYear').value || '0');
-
-  if(!name){
-    alert('Podaj nazwę pola');
-    return;
-  }
-  if(isNaN(area) || !currentPolygonGeoJSON){
-    alert('Narysuj pole na mapie, aby policzyć powierzchnię');
-    return;
-  }
-
-  const field = {
-    name,
-    area_ha: area,
-    geometry: currentPolygonGeoJSON,
-    current_crop_id: cropId ? Number(cropId) : null,
-    notes
-  };
-
-  let error;
-  let fieldId;
-  if(editingFieldId){
-    ({ error } = await supabaseClient
-      .from('fields')
-      .update(field)
-      .eq('id', editingFieldId));
-    fieldId = editingFieldId;
-  }else{
-    const res = await supabaseClient
-      .from('fields')
-      .insert([field])
-      .select('id')
-      .single();
-    error = res.error;
-    fieldId = res.data?.id;
-  }
-
-  if(error){
-    console.log('Insert/Update field error', error);
-    alert('Błąd zapisu pola');
-    return;
-  }
-
-  if(seasonYear && cropId){
-    const cropName = document.querySelector(`#fieldCrop option[value="${cropId}"]`)?.textContent || '';
-    await supabaseClient
-      .from('field_seasons')
-      .delete()
-      .eq('field_id', fieldId)
-      .eq('season_year', seasonYear);
-
-    await supabaseClient
-      .from('field_seasons')
-      .insert([{ field_id: fieldId, season_year: seasonYear, crop_name: cropName, area_ha: area }]);
-  }
-
-  alert(editingFieldId ? 'Pole zaktualizowane' : 'Pole zapisane');
-  editingFieldId = null;
-  document.getElementById('fieldName').value = '';
-  document.getElementById('fieldArea').value = '';
-  document.getElementById('fieldCrop').value = '';
-  document.getElementById('fieldNotes').value = '';
-  drawnItems.clearLayers();
-  currentPolygonGeoJSON = null;
-
-  await loadFields();
-  await loadTreatmentFields();
-  await loadSeasonSummary();
-  await updateStartMetrics();
-}
-
 /* ZABIEGI */
 
 async function loadTreatmentFields(){
