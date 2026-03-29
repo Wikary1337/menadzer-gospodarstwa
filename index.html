@@ -1432,9 +1432,8 @@ document.addEventListener('change', e => {
       label.classList.add('selected-field');
     }else{
       label.classList.remove('selected-field');
-    }
-  }
-});
+  });
+}
   
 async function loadWarehouseForTreatments(){
   const { data, error } = await supabaseClient
