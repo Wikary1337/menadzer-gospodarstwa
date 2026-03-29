@@ -1113,6 +1113,16 @@ async function loadFields(){
     return;
   }
 
+  // sortowanie: najpierw po nazwie uprawy, potem po nazwie pola
+  data.sort((a, b) => {
+    const cropA = (a.crops && a.crops.name) ? a.crops.name : 'ZZZ';
+    const cropB = (b.crops && b.crops.name) ? b.crops.name : 'ZZZ';
+    if (cropA === cropB){
+      return (a.name || '').localeCompare(b.name || '', 'pl');
+    }
+    return cropA.localeCompare(cropB, 'pl');
+  });
+
   const bounds = L.latLngBounds();
   container.innerHTML = '';
 
@@ -1383,6 +1393,16 @@ async function loadTreatmentFields(){
     list.textContent = 'Brak pól – dodaj pola w zakładce Pola.';
     return;
   }
+
+  // sortowanie wg uprawy, potem nazwy pola
+  data.sort((a, b) => {
+    const cropA = (a.crops && a.crops.name) ? a.crops.name : 'ZZZ';
+    const cropB = (b.crops && b.crops.name) ? b.crops.name : 'ZZZ';
+    if (cropA === cropB){
+      return (a.name || '').localeCompare(b.name || '', 'pl');
+    }
+    return cropA.localeCompare(cropB, 'pl');
+  });
 
   list.innerHTML = '';
 
