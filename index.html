@@ -931,9 +931,7 @@ function showTab(id){
     loadSeasonSummary();
   }
   if(id === 'rain'){
-    loadRainToday();
-    loadRain7Days();
-    loadRainMonthly();
+    loadRainData();   // jedna funkcja ładuje i rysuje wszystko
   }
 }
 
@@ -2694,7 +2692,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadMachines();
   await loadSeasonSummary();
   await loadStartWeather();
-  await loadRainData();      // ← DODAJ TO
+  await loadRainData();
   updateStartClock();
   setInterval(updateStartClock, 60000);
   await updateStartMetrics();
