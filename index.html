@@ -452,7 +452,7 @@ button.primary:hover{background:#15803d}
       <div class="col">
         <label>Pola objęte zabiegiem</label>
         <div class="checkbox-list small">
-        <table id="treatFieldsTable">
+    <table id="treatFieldsTable">
   <thead>
     <tr>
       <th></th>
@@ -462,11 +462,9 @@ button.primary:hover{background:#15803d}
     </tr>
   </thead>
   <tbody id="treatFieldsList">
-              <tr><td colspan="4">Ładowanie pól...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <tr><td colspan="4">Ładowanie pól...</td></tr>
+  </tbody>
+</table>
 
       <div class="col">
         <label>Środki z magazynu (bez paliwa)</label>
@@ -1263,8 +1261,7 @@ async function deleteField(fieldId){
   await updateStartMetrics();
 }
 
-/* ZABIEGI – pola w tabeli */
-
+// ====== ZABIEGI ======
 async function loadTreatmentFields(){
   const body = document.getElementById('treatFieldsList');
 
@@ -1278,7 +1275,7 @@ async function loadTreatmentFields(){
         name
       )
     `)
-    .order('name',{ascending:true});
+    .order('name',{ ascending:true });
 
   if(error){
     console.log('Load treat fields error', error);
@@ -1298,7 +1295,6 @@ async function loadTreatmentFields(){
 
     const tr = document.createElement('tr');
 
-    // tworzymy komórki „ręcznie”, bez szablonu
     const tdCheck = document.createElement('td');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
