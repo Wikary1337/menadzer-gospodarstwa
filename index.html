@@ -298,12 +298,15 @@ button.primary:hover{background:#15803d}
 
   /* Żeby tabele nie wychodziły poza ekran */
   #treatments table{
-    display:block;
+    width:100%;
+    min-width:600px;   /* tabela może być szersza niż ekran */
+  }
+
+  #treatments .table-wrapper{
     width:100%;
     overflow-x:auto;
   }
 
-  /* dodatkowe zawężenie tekstu w tabelach Zabiegów */
   #treatments th,
   #treatments td{
     font-size:11px;
@@ -530,7 +533,8 @@ button.primary:hover{background:#15803d}
 
       <div class="col">
        <label>Środki z magazynu (bez paliwa)</label>
-<table class="table small">
+  <div class="table-wrapper">
+  <table class="table small">
   <thead>
     <tr>
       <th>Pozycja magazynu</th>
@@ -555,7 +559,8 @@ button.primary:hover{background:#15803d}
         <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
 
         <h3 style="margin-top:8px;">Środki jednorazowe (poza magazynem)</h3>
-        <table class="table small">
+<div class="table-wrapper">
+  <table class="table small">
           <thead>
             <tr>
               <th>Nazwa środka</th>
