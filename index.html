@@ -1262,8 +1262,6 @@ async function deleteField(fieldId){
   await loadSeasonSummary();
   await updateStartMetrics();
 }
-  
-/* ZABieGI – pola w tabeli */
 
 /* ZABIEGI – pola w tabeli */
 
@@ -1299,16 +1297,30 @@ async function loadTreatmentFields(){
     const area = Number(field.area_ha || 0);
 
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>
-        <input type="checkbox"
-               value="${field.id}"
-               data-area="${area}">
-      </td>
-      <td>${field.name}</td>
-      <td>${cropName}</td>
-      <td style="text-align:right;">${area.toFixed(2)}</td>
-    `;
+
+    // tworzymy komórki „ręcznie”, bez szablonu
+    const tdCheck = document.createElement('td');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = field.id;
+    checkbox.dataset.area = String(area);
+    tdCheck.appendChild(checkbox);
+
+    const tdName = document.createElement('td');
+    tdName.textContent = field.name;
+
+    const tdCrop = document.createElement('td');
+    tdCrop.textContent = cropName;
+
+    const tdArea = document.createElement('td');
+    tdArea.textContent = area.toFixed(2);
+    tdArea.style.textAlign = 'right';
+
+    tr.appendChild(tdCheck);
+    tr.appendChild(tdName);
+    tr.appendChild(tdCrop);
+    tr.appendChild(tdArea);
+
     body.appendChild(tr);
   });
 }
