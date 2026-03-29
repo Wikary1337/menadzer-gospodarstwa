@@ -431,89 +431,90 @@ button.primary:hover{background:#15803d}
       </div>
       <div>
         <label>Typ zabiegu<br>
-      <select id="treatType">
-        <option value="oprysk">Oprysk</option>
-        <option value="nawozenie">Nawożenie</option>
-        <option value="inne">Inne</option>
-      </select>
-    </label>
-  </div>
-  <div>
-    <label>Przybliżona temperatura [°C]<br>
-      <input id="treatTemp" type="number" step="0.5" placeholder="np. 15">
-    </label>
-  </div>
-</div>
-
-<div class="form-row">
-  <div class="col">
-    <label>Pola objęte zabiegiem</label>
-    <div class="checkbox-list small" id="treatFieldsList">
-      Ładowanie pól...
+          <select id="treatType">
+            <option value="oprysk">Oprysk</option>
+            <option value="nawozenie">Nawożenie</option>
+            <option value="inne">Inne</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>Przybliżona temperatura [°C]<br>
+          <input id="treatTemp" type="number" step="0.5" placeholder="np. 15">
+        </label>
+      </div>
     </div>
+
+    <div class="form-row">
+      <div class="col">
+        <label>Pola objęte zabiegiem</label>
+        <div class="checkbox-list small" id="treatFieldsList">
+          Ładowanie pól...
+        </div>
+      </div>
+
+      <div class="col">
+        <label>Środki z magazynu (bez paliwa)</label>
+        <table class="table small">
+          <thead>
+            <tr>
+              <th>Pozycja magazynu</th>
+              <th>Ilość [jedn]</th>
+              <th>Dawka / ha</th>
+            </tr>
+          </thead>
+          <tbody id="treatItemsBody">
+            <tr>
+              <td>
+                <select class="treatItemSelect">
+                  <option value="">-- wybierz --</option>
+                </select>
+              </td>
+              <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+              <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
+
+        <h3 style="margin-top:8px;">Środki jednorazowe (poza magazynem)</h3>
+        <table class="table small">
+          <thead>
+            <tr>
+              <th>Nazwa środka</th>
+              <th>Ilość łączna</th>
+              <th>Jednostka</th>
+              <th>Dawka / ha</th>
+              <th>Akcja</th>
+            </tr>
+          </thead>
+          <tbody id="extraItemsBody">
+            <tr>
+              <td><input class="extraName" placeholder="np. Nowy herbicyd"></td>
+              <td><input type="number" step="0.01" class="extraAmount" style="width:80px"></td>
+              <td><input class="extraUnit" placeholder="l / kg" style="width:70px"></td>
+              <td><input type="number" step="0.01" class="extraDose" style="width:80px" readonly></td>
+              <td><button onclick="removeExtraItemRow(this)">Usuń</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="primary" style="margin-top:6px;" onclick="addExtraItemRow()">Dodaj środek jednorazowy</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div style="flex:1">
+        <label>Notatka<br>
+          <textarea id="treatNote" rows="2" style="width:100%;"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <button class="primary" onclick="saveTreatment()">Zapisz zabieg</button>
+
+    <h3 style="margin-top:16px;">Historia zabiegów</h3>
+    <div id="treatmentsList" class="small">Ładowanie...</div>
   </div>
-
-  <div class="col">
-    <label>Środki z magazynu (bez paliwa)</label>
-    <table class="table small">
-      <thead>
-        <tr>
-          <th>Pozycja magazynu</th>
-          <th>Ilość [jedn]</th>
-          <th>Dawka / ha</th>
-        </tr>
-      </thead>
-      <tbody id="treatItemsBody">
-        <tr>
-          <td>
-            <select class="treatItemSelect">
-              <option value="">-- wybierz --</option>
-            </select>
-          </td>
-          <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
-          <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
-
-    <h3 style="margin-top:8px;">Środki jednorazowe (poza magazynem)</h3>
-    <table class="table small">
-      <thead>
-        <tr>
-          <th>Nazwa środka</th>
-          <th>Ilość łączna</th>
-          <th>Jednostka</th>
-          <th>Dawka / ha</th>
-          <th>Akcja</th>
-        </tr>
-      </thead>
-      <tbody id="extraItemsBody">
-        <tr>
-          <td><input class="extraName" placeholder="np. Nowy herbicyd"></td>
-          <td><input type="number" step="0.01" class="extraAmount" style="width:80px"></td>
-          <td><input class="extraUnit" placeholder="l / kg" style="width:70px"></td>
-          <td><input type="number" step="0.01" class="extraDose" style="width:80px" readonly></td>
-          <td><button onclick="removeExtraItemRow(this)">Usuń</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="primary" style="margin-top:6px;" onclick="addExtraItemRow()">Dodaj środek jednorazowy</button>
-  </div>
-</div>
-
-<div class="form-row">
-  <div style="flex:1">
-    <label>Notatka<br>
-      <textarea id="treatNote" rows="2" style="width:100%;"></textarea>
-    </label>
-  </div>
-</div>
-
-<button class="primary" onclick="saveTreatment()">Zapisz zabieg</button>
-
-<h3 style="margin-top:16px;">Historia zabiegów</h3>
-<div id="treatmentsList" class="small">Ładowanie...</div>
 
   <!-- MAGAZYN -->
   <div id="warehouse" class="section">
@@ -680,51 +681,54 @@ button.primary:hover{background:#15803d}
     </div>
   </div>
 
-<div id="rain" class="section">
-  <h2>Opady</h2>
+  <!-- OPADY -->
+  <div id="rain" class="section">
+    <h2>Opady</h2>
 
-  <h3>Dzisiejsze opady</h3>
-  <p>
-    Razem: <span id="rainTodayTotal">0.0</span> l/m²
-  </p>
-  <table class="table small">
-    <thead>
-      <tr>
-        <th>Godzina</th>
-        <th>Opad [l/m²]</th>
-      </tr>
-    </thead>
-    <tbody id="rainTodayTableBody"></tbody>
-  </table>
+    <h3>Dzisiejsze opady</h3>
+    <p>
+      Razem: <span id="rainTodayTotal">0.0</span> l/m²
+    </p>
+    <table class="table small">
+      <thead>
+        <tr>
+          <th>Godzina</th>
+          <th>Opad [l/m²]</th>
+        </tr>
+      </thead>
+      <tbody id="rainTodayTableBody"></tbody>
+    </table>
 
-  <div class="columns" style="margin-top:16px;">
-    <div class="col">
-      <h3>Ostatnie 7 dni</h3>
-      <canvas id="rain7daysChart"></canvas>
-      <table class="table small" style="margin-top:8px;">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Opad [l/m²]</th>
-          </tr>
-        </thead>
-        <tbody id="rain7daysTableBody"></tbody>
-      </table>
+    <div class="columns" style="margin-top:16px;">
+      <div class="col">
+        <h3>Ostatnie 7 dni</h3>
+        <canvas id="rain7daysChart"></canvas>
+        <table class="table small" style="margin-top:8px;">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Opad [l/m²]</th>
+            </tr>
+          </thead>
+          <tbody id="rain7daysTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="col">
+        <h3>Opady miesięczne</h3>
+        <canvas id="rainMonthlyChart"></canvas>
+        <table class="table small" style="margin-top:8px;">
+          <thead>
+            <tr>
+              <th>Miesiąc</th>
+              <th>Opad [l/m²]</th>
+            </tr>
+          </thead>
+          <tbody id="rainMonthlyTableBody"></tbody>
+        </table>
+      </div>
     </div>
-
-    <div class="col">
-      <h3>Opady miesięczne</h3>
-      <canvas id="rainMonthlyChart"></canvas>
-      <table class="table small" style="margin-top:8px;">
-        <thead>
-          <tr>
-            <th>Miesiąc</th>
-            <th>Opad [l/m²]</th>
-          </tr>
-        </thead>
-        <tbody id="rainMonthlyTableBody"></tbody>
-      </table>
-    </div>
+  </div>
 </div>
   
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
