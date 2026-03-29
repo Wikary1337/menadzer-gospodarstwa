@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gospodarstwo – Panel</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -307,6 +308,94 @@ button.primary:hover{background:#15803d}
   margin-top:6px;
   font-size:12px;
 }
+
+/* === RESPONSYWNOŚĆ NA TELEFONY === */
+@media (max-width: 768px){
+
+  /* Ogólne zawężenie i marginesy */
+  body{
+    padding:8px;
+    font-size:14px;
+  }
+
+  .container{
+    max-width:100%;
+    margin:0;
+    padding:10px;
+    border-radius:0;
+  }
+
+  /* Wiersze formularza jeden pod drugim */
+  .form-row{
+    flex-direction:column;
+    gap:6px;
+  }
+
+  .form-row label{
+    width:100%;
+  }
+
+  .form-row input,
+  .form-row select,
+  .form-row textarea{
+    width:100%;
+    min-width:0;
+  }
+
+  /* Kolumny w sekcjach: jedna pod drugą */
+  .columns{
+    flex-direction:column;
+  }
+
+  .col{
+    flex:1 1 100%;
+  }
+
+  /* Zakładki w dwóch rzędach */
+  .tabs{
+    flex-wrap:wrap;
+    gap:4px;
+  }
+
+  .tabs button{
+    flex:1 1 48%;
+    font-size:12px;
+    padding:6px 4px;
+  }
+
+  /* Niższa mapa na telefonie */
+  #map{
+    height:300px;
+  }
+
+  /* Tabele trochę ciaśniejsze */
+  .table th,
+  .table td{
+    padding:3px 4px;
+    font-size:12px;
+  }
+
+  /* Sekcja ZABIEGI – tabele czytelne w pionie */
+  #treatments .table{
+    table-layout:fixed;
+    width:100%;
+  }
+
+  #treatments th,
+  #treatments td{
+    font-size:11px;
+    padding:3px 4px;
+    white-space:normal;
+    word-wrap:break-word;
+  }
+
+  /* Jeśli zawiniesz tabele w .table-wrapper, usuń poziomy scroll całej strony */
+  .table-wrapper{
+    width:100%;
+    overflow-x:auto;
+  }
+}
+  
 </style>
 </head>
 
