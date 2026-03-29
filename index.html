@@ -2600,7 +2600,7 @@ async function loadSeasonSummary(){
 
 /* INIT */
 
-document.addEventListener('DOMContentLoaded', async ()=>{
+document.addEventListener('DOMContentLoaded', async () => {
   initMap();
   await ensureFuelRow();
   await loadCrops();
@@ -2610,10 +2610,12 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   await loadWarehouseForTreatments();
   await loadTreatmentsList();
   await loadMachines();
-  await updateStartMetrics();
+  await loadSeasonSummary();
   await loadStartWeather();
+  await loadRainData();      // ← DODAJ TO
   updateStartClock();
   setInterval(updateStartClock, 60000);
+  await updateStartMetrics();
 });
 </script>
 </body>
