@@ -400,6 +400,36 @@ button.primary:hover{background:#15803d}
     width:100%;
     overflow-x:auto;
   }
+
+/* Zabiegi – lista pól jako „kartki” zamiast tabeli */
+  #treatments #treatFieldsList{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+
+  #treatments #treatFieldsList label{
+    display:flex;
+    align-items:flex-start;
+    gap:6px;
+    padding:4px 6px;
+    border-radius:6px;
+    border:1px solid #e5e7eb;
+    background:#ffffff;
+  }
+
+  #treatments #treatFieldsList label span{
+    font-size:12px;
+  }
+
+  #treatments #treatFieldsList span.field-name{
+    font-weight:bold;
+  }
+
+  #treatments #treatFieldsList span.field-meta{
+    color:#6b7280;
+    font-size:11px;
+  }
 }
   
 </style>
@@ -1405,8 +1435,8 @@ async function loadTreatmentFields(){
   });
 
   list.innerHTML = '';
-
-  data.forEach(field => {
+  
+data.forEach(field => {
     const cropName = (field.crops && field.crops.name) ? field.crops.name : '—';
     const area = Number(field.area_ha || 0);
 
@@ -1422,28 +1452,25 @@ async function loadTreatmentFields(){
     checkbox.dataset.area = String(area);
     checkbox.style.marginRight = '6px';
 
+    const textWrapper = document.createElement('div');
+
     const nameSpan = document.createElement('span');
     nameSpan.textContent = field.name;
-    nameSpan.style.flex = '1';
+    nameSpan.className = 'field-name';
 
-    const cropSpan = document.createElement('span');
-    cropSpan.textContent = cropName;
-    cropSpan.style.flex = '1';
-    cropSpan.style.color = '#6b7280';
+    const metaSpan = document.createElement('span');
+    metaSpan.textContent = `${cropName} • ${area.toFixed(2)} ha`;
+    metaSpan.className = 'field-meta';
 
-    const areaSpan = document.createElement('span');
-    areaSpan.textContent = area.toFixed(2) + ' ha';
-    areaSpan.style.width = '70px';
-    areaSpan.style.textAlign = 'right';
+    textWrapper.appendChild(nameSpan);
+    textWrapper.appendChild(document.createElement('br'));
+    textWrapper.appendChild(metaSpan);
 
     label.appendChild(checkbox);
-    label.appendChild(nameSpan);
-    label.appendChild(cropSpan);
-    label.appendChild(areaSpan);
+    label.appendChild(textWrapper);
 
     list.appendChild(label);
   });
-}
 
   // podświetlanie zaznaczonych pól w Zabiegach
 document.addEventListener('change', e => {
