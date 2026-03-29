@@ -1422,8 +1422,10 @@ async function loadTreatmentFields(){
     label.appendChild(areaSpan);
 
     list.appendChild(label);
-    
-// podświetlanie zaznaczonych pól w Zabiegach
+  });
+}
+
+  // podświetlanie zaznaczonych pól w Zabiegach
 document.addEventListener('change', e => {
   if(e.target.closest('#treatFieldsList') && e.target.type === 'checkbox'){
     const label = e.target.closest('label');
@@ -1432,8 +1434,9 @@ document.addEventListener('change', e => {
       label.classList.add('selected-field');
     }else{
       label.classList.remove('selected-field');
-  });
-}
+    }
+  }
+});
   
 async function loadWarehouseForTreatments(){
   const { data, error } = await supabaseClient
