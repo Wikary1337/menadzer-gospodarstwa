@@ -245,14 +245,29 @@ button.primary:hover{background:#15803d}
   width:100%;
   border-collapse:collapse;
   margin-top:4px;
+  table-layout:fixed;          /* nowość: równe kolumny */
 }
-#treatFieldsTable th,#treatFieldsTable td{
+#treatFieldsTable th,
+#treatFieldsTable td{
   border:1px solid #e5e7eb;
-  padding:3px 4px;
-  font-size:12px;
+  padding:2px 4px;             /* mniejsze odstępy */
+  font-size:11px;              /* minimalnie mniejsza czcionka */
+  white-space:nowrap;          /* brak zawijania */
+  overflow:hidden;
+  text-overflow:ellipsis;      /* ucięcie długich nazw */
 }
 #treatFieldsTable th{
   background:#e5e7eb;
+  text-align:left;
+}
+#treatFieldsTable th:nth-child(1),
+#treatFieldsTable td:nth-child(1){
+  width:26px;                  /* wąska kolumna na checkbox */
+}
+#treatFieldsTable th:nth-child(4),
+#treatFieldsTable td:nth-child(4){
+  width:60px;                  /* stała szerokość dla ha */
+  text-align:right;
 }
 
 /* Machine services */
@@ -437,16 +452,16 @@ button.primary:hover{background:#15803d}
       <div class="col">
         <label>Pola objęte zabiegiem</label>
         <div class="checkbox-list small">
-          <table id="treatFieldsTable">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Uprawa</th>
-                <th>Nazwa pola</th>
-                <th>Pow. [ha]</th>
-              </tr>
-            </thead>
-            <tbody id="treatFieldsList">
+         <table id="treatFieldsTable">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Nazwa pola</th>
+      <th>Uprawa</th>
+      <th>Pow. [ha]</th>
+    </tr>
+  </thead>
+  <tbody id="treatFieldsList">
               <tr><td colspan="4">Ładowanie pól...</td></tr>
             </tbody>
           </table>
@@ -1286,8 +1301,8 @@ async function loadTreatmentFields(){
        const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
-      <td>${cropName}</td>
       <td>${field.name}</td>
+      <td>${cropName}</td>
       <td>${Number(field.area_ha).toFixed(2)}</td>
     `;
     body.appendChild(tr);
