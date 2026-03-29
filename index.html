@@ -286,33 +286,27 @@ button.primary:hover{background:#15803d}
     font-size:12px;
   }
 
-  /* Tylko sekcja Zabiegi */
-  #treatments .form-row{
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  #treatments .col{
-    flex:1 1 100%;
-  }
-
-  /* Żeby tabele nie wychodziły poza ekran */
-  #treatments table{
-    width:100%;
-    min-width:600px;   /* tabela może być szersza niż ekran */
-  }
-
-  #treatments .table-wrapper{
-    width:100%;
-    overflow-x:auto;
+/* Sekcja Zabiegi – tabela bardziej mobilna */
+  #treatments .table{
+    table-layout: fixed;
+    width: 100%;
   }
 
   #treatments th,
   #treatments td{
-    font-size:11px;
-    white-space:nowrap;
+    font-size: 11px;
+    padding: 3px 4px;
+    white-space: normal;   /* pozwól łamać wiersze */
+    word-wrap: break-word; /* łam długie teksty */
+  }
+
+  /* jeśli używasz wrappera – nie wymuszaj min-width na tabeli */
+  #treatments .table-wrapper{
+    width: 100%;
+    overflow-x: visible;
   }
 }
+  
 </style>
 
 /* Treatments fields table */
