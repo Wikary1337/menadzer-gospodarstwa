@@ -1326,18 +1326,15 @@ async function loadWarehouseForTreatments(){
     return;
   }
 
+  window._warehouseForTreatmentsCache = data || [];
+
   const selects = document.querySelectorAll('.treatItemSelect');
   selects.forEach(sel=>{
-    sel.innerHTML = '<option value="">-- wybierz --</option>';
-    (data || []).forEach(item=>{
-      const label = `${item.name} (${item.category === 'plant_protection' ? 'ŚOR' : 'nawóz'}, ${item.qty} ${item.unit})`;
-      const opt = document.createElement('option');
-      opt.value = item.id;
-      opt.textContent = label;
-      opt.dataset.unit = item.unit;
-      opt.dataset.category = item.category;
-      sel.appendChild(opt);
-    });
+    const prevValue = sel.value;      // zapamiętujemy wybór
+    fillWarehouseSelect(sel, data);
+    if(prevValue){
+      sel.value = prevValue;          // przywracamy wybraną pozycję
+    }
   });
 }
 
