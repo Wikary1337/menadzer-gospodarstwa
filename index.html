@@ -2517,23 +2517,23 @@ async function loadSeasonSummary(){
     return;
   }
 
- const { data, error } = await supabaseClient
-  .from('field_seasons')
-  .select(`
-    crop_name,
-    field:fields (
-      id,
-      area_ha
-    )
-  `)
-  .eq('season_year', year);
+  const { data, error } = await supabaseClient
+    .from('field_seasons')
+    .select(`
+      crop_name,
+      field:fields (
+        id,
+        area_ha
+      )
+    `)
+    .eq('season_year', year);
 
   if(error){
     console.log('Season summary error', error);
     box.textContent = 'Błąd ładowania danych sezonu';
     return;
   }
-  if(!data || data.length===0){
+  if(!data || data.length === 0){
     box.textContent = 'Brak danych dla tego roku.';
     if(seasonChart){
       seasonChart.destroy();
@@ -2543,17 +2543,17 @@ async function loadSeasonSummary(){
   }
 
   const totals = {};
-data.forEach(row => {
-  // pomiń wpisy bez istniejącego pola
-  if (!row.field || row.field.area_ha == null) return;
+  data.forEach(row => {
+    // pomiń wpisy bez istniejącego pola
+    if(!row.field || row.field.area_ha == null) return;
 
-  const crop = row.crop_name || '—';
-  if (!totals[crop]) totals[crop] = 0;
-  totals[crop] += Number(row.field.area_ha || 0);
-});
+    const crop = row.crop_name || '—';
+    if(!totals[crop]) totals[crop] = 0;
+    totals[crop] += Number(row.field.area_ha || 0);
+  });
 
   let html = '<ul>';
-  Object.entries(totals).forEach(([crop,area])=>{
+  Object.entries(totals).forEach(([crop, area])=>{
     html += `<li>${crop}: ${area.toFixed(2)} ha</li>`;
   });
   html += '</ul>';
@@ -2562,21 +2562,21 @@ data.forEach(row => {
   const ctx = document.getElementById('seasonChart').getContext('2d');
   const labels = Object.keys(totals);
   const areas = Object.values(totals);
-  const colors = labels.map(c=>getCropColor(c));
+  const colors = labels.map(c => getCropColor(c));
 
   if(seasonChart) seasonChart.destroy();
   seasonChart = new Chart(ctx, {
-    type:'pie',
-    data:{
+    type: 'pie',
+    data: {
       labels,
-      datasets:[{
-        data:areas,
-        backgroundColor:colors
+      datasets: [{
+        data: areas,
+        backgroundColor: colors
       }]
     },
-    options:{
-      plugins:{
-        legend:{position:'bottom'}
+    options: {
+      plugins: {
+        legend: { position: 'bottom' }
       }
     }
   });
