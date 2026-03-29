@@ -834,18 +834,23 @@ async function updateStartMetrics(){
 /* TABS */
 
 function showTab(id){
+  // przyciski
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  // sekcje
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelector(`.tabs button[onclick="showTab('${id}')"]`).classList.add('active');
-  document.getElementById(id).classList.add('active');
 
-  if(id === 'seasons') {
+  const btn = document.querySelector(`.tabs button[onclick="showTab('${id}')"]`);
+  const sec = document.getElementById(id);
+  if(btn) btn.classList.add('active');
+  if(sec) sec.classList.add('active');
+
+  if(id === 'fields' && map){
+    setTimeout(()=>map.invalidateSize(),50);
+  }
+  if(id === 'seasons'){
     loadSeasonSummary();
-  } else if (id === 'rain') {
-    loadRainData();
   }
 }
-
 
       
 /* MAPA */
