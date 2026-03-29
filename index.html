@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>Gospodarstwo – Panel</title>
 
@@ -236,6 +237,56 @@ button.primary:hover{background:#15803d}
 .start-weather-small{
   font-size:12px;
 }
+
+  /* TU DODAJEMY MEDIA QUERIES */
+  @media (max-width: 768px) {
+    body{
+      padding:8px;
+      font-size:14px;
+    }
+
+    .container{
+      padding:10px;
+      border-radius:0;
+      max-width:100%;
+      margin:0;
+    }
+
+    .form-row{
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .columns{
+      flex-direction:column;
+    }
+
+    .col{
+      flex:1 1 100%;
+    }
+
+    .tabs{
+      flex-wrap:wrap;
+      gap:4px;
+    }
+
+    .tabs button{
+      flex:1 1 48%;
+      font-size:12px;
+      padding:6px 4px;
+    }
+
+    #map{
+      height:300px;
+    }
+
+    .table th,
+    .table td{
+      padding:3px 4px;
+      font-size:12px;
+    }
+  }
+</style>
 
 /* Treatments fields table */
 #treatFieldsTable{
