@@ -538,8 +538,9 @@ button.primary:hover{background:#15803d}
         <h3>Środki ochrony roślin</h3>
         <div class="form-row">
           <label>Nazwa<br>
-            <input id="ppName">
+           <input id="ppName" list="ppNameList">
           </label>
+          <datalist id="ppNameList"></datalist>
           <label>Ilość [l/kg]<br>
             <input id="ppQty" type="number" step="0.01">
           </label>
@@ -556,9 +557,10 @@ button.primary:hover{background:#15803d}
       <div class="col">
         <h3>Nawozy</h3>
         <div class="form-row">
-          <label>Nazwa<br>
-            <input id="fertName">
+         <label>Nazwa<br>
+           <input id="fertName" list="fertNameList">
           </label>
+          <datalist id="fertNameList"></datalist>
           <label>Ilość [kg]<br>
             <input id="fertQty" type="number" step="0.01">
           </label>
@@ -838,9 +840,7 @@ async function updateStartMetrics(){
 /* TABS */
 
 function showTab(id){
-  // przyciski
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
-  // sekcje
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
 
   const btn = document.querySelector(`.tabs button[onclick="showTab('${id}')"]`);
@@ -853,6 +853,11 @@ function showTab(id){
   }
   if(id === 'seasons'){
     loadSeasonSummary();
+  }
+  if(id === 'rain'){
+    loadRainToday();
+    loadRain7Days();
+    loadRainMonthly();
   }
 }
 
@@ -2203,8 +2208,8 @@ async function loadWarehouseTables(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
     .select('*')
-    .order('category',{ascending:true})
     .order('name',{ascending:true});
+
   if(error){
     console.log('Warehouse load error', error);
     return;
@@ -2212,36 +2217,47 @@ async function loadWarehouseTables(){
 
   const ppBody = document.querySelector('#ppTable tbody');
   const fertBody = document.querySelector('#fertTable tbody');
-  const fuelInfo = document.getElementById('fuelInfo');
+  const ppList = document.getElementById('ppNameList');
+  const fertList = document.getElementById('fertNameList');
 
-  ppBody.innerHTML = '';
-  fertBody.innerHTML = '';
-  fuelInfo.textContent = '';
+  if(ppBody) ppBody.innerHTML = '';
+  if(fertBody) fertBody.innerHTML = '';
+  if(ppList) ppList.innerHTML = '';
+  if(fertList) fertList.innerHTML = '';
 
   (data || []).forEach(item=>{
     if(item.category === 'plant_protection'){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${item.name}</td>
-        <td>${item.qty} ${item.unit}</td>
-        <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
-      `;
-      ppBody.appendChild(tr);
+      if(ppBody){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.qty} ${item.unit}</td>
+          <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
+        `;
+        ppBody.appendChild(tr);
+      }
+      if(ppList){
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        ppList.appendChild(opt);
+      }
     }else if(item.category === 'fertilizer'){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${item.name}</td>
-        <td>${item.qty} ${item.unit}</td>
-        <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
-      `;
-      fertBody.appendChild(tr);
-    }else if(item.category === 'fuel' && item.name === 'Diesel'){
-      fuelInfo.textContent = `Aktualny stan paliwa: ${item.qty} ${item.unit}`;
-      document.getElementById('fuelQty').value = item.qty;
+      if(fertBody){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.qty} ${item.unit}</td>
+          <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
+        `;
+        fertBody.appendChild(tr);
+      }
+      if(fertList){
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        fertList.appendChild(opt);
+      }
     }
-  });
-}
-
+    
 async function deleteWarehouseItem(id){
   if(!confirm('Usunąć pozycję z magazynu?')) return;
   const { error } = await supabaseClient
