@@ -1421,8 +1421,8 @@ function removeExtraItemRow(btn){
   }
 }
 
-  function removeTreatItemRow(btn){
-  const tr = btn.closest('tr');
+function removeTreatItemRow(btn){
+  const tr = btn.closest('tr');   // tutaj definiujemy tr
   if(tr && tr.parentNode){
     tr.parentNode.removeChild(tr);
   }
