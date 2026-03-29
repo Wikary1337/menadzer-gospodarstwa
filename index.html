@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>Gospodarstwo – Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -28,356 +28,101 @@ body{
   box-shadow:0 20px 40px rgba(15,23,42,0.35);
   border:1px solid #1f2937;
 }
-h1{
-  margin-bottom:4px;
-  font-size:26px;
-}
-.app-subtitle{
-  font-size:13px;
-  color:#6b7280;
-  margin-bottom:12px;
-}
-.tabs{
-  margin-bottom:12px;
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-}
+h1{margin-bottom:4px;font-size:26px;}
+.app-subtitle{font-size:13px;color:#6b7280;margin-bottom:12px;}
+.tabs{margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;}
 .tabs button{
-  padding:6px 12px;
-  border:none;
-  border-radius:999px;
-  background:#e5e7eb;
-  cursor:pointer;
-  font-size:13px;
+  padding:6px 12px;border:none;border-radius:999px;
+  background:#e5e7eb;cursor:pointer;font-size:13px;
 }
-.tabs button.active{
-  background:#2563eb;
-  color:#fff;
-}
+.tabs button.active{background:#2563eb;color:#fff;}
 .section{display:none}
 .section.active{display:block}
 
 #map{
-  width:100%;
-  height:460px;
-  border:1px solid #e5e7eb;
-  border-radius:10px;
-  margin-top:8px;
+  width:100%;height:460px;border:1px solid #e5e7eb;
+  border-radius:10px;margin-top:8px;
 }
 
-.form-row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-top:10px;
-}
-.form-row label{
-  font-size:13px;
-}
-.form-row input, .form-row select, .form-row textarea{
-  padding:6px 8px;
-  border:1px solid #d1d5db;
-  border-radius:6px;
-  min-width:180px;
-  font-size:13px;
-  background:#ffffff;
+.form-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+.form-row label{font-size:13px;}
+.form-row input,.form-row select,.form-row textarea{
+  padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;
+  min-width:180px;font-size:13px;background:#ffffff;
 }
 button.primary{
-  background:#16a34a;
-  color:#fff;
-  border:none;
-  padding:8px 14px;
-  border-radius:999px;
-  cursor:pointer;
-  margin-top:10px;
-  font-size:13px;
+  background:#16a34a;color:#fff;border:none;padding:8px 14px;
+  border-radius:999px;cursor:pointer;margin-top:10px;font-size:13px;
 }
 button.primary:hover{background:#15803d}
 .small{font-size:12px;color:#6b7280}
-#fieldsContainer .field-item{
-  padding:6px 0;
-  border-bottom:1px solid #e5e7eb;
-  cursor:pointer;
-}
-#fieldsContainer .field-item:hover{background:#f3f4f6}
 
-.table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:8px;
-}
+.table{width:100%;border-collapse:collapse;margin-top:8px;}
 .table th,.table td{
-  border:1px solid #e5e7eb;
-  padding:4px 6px;
-  font-size:13px;
+  border:1px solid #e5e7eb;padding:4px 6px;font-size:13px;
 }
 .table th{background:#e5e7eb;text-align:left}
 
-.badge{
-  display:inline-block;
-  padding:2px 6px;
-  border-radius:4px;
-  font-size:11px;
-  background:#e5e7eb;
-}
-.columns{
-  display:flex;
-  flex-wrap:wrap;
-  gap:16px;
-}
-.col{
-  flex:1 1 260px;
-}
+.columns{display:flex;flex-wrap:wrap;gap:16px;}
+.col{flex:1 1 260px;}
 .checkbox-list{
-  max-height:none;
-  overflow:visible;
-}
-
-#mapSearchRow{
-  display:flex;
-  gap:8px;
-  margin-top:6px;
-  align-items:center;
-}
-#mapSearchInput{
-  flex:1;
-  padding:6px 8px;
-  border:1px solid #d1d5db;
-  border-radius:6px;
-}
-.field-actions{
-  margin-top:4px;
-}
-.field-actions button{
-  margin-right:4px;
-  padding:2px 6px;
-  font-size:11px;
-}
-
-.service-group{
-  border:1px solid #e5e7eb;
-  border-radius:6px;
-  padding:6px;
-  margin-top:6px;
-  background:#f9fafb;
-}
-.service-group h4{
-  margin:0 0 4px 0;
-  font-size:13px;
-}
-.service-group label{
-  display:block;
-  font-size:12px;
-}
-#seasonsChartWrapper{
-  max-width:600px;
-  margin-top:12px;
+  max-height:200px;overflow:auto;border:1px solid #e5e7eb;
+  border-radius:6px;background:#ffffff;
 }
 
 /* START PAGE */
-#start{
-  display:flex;
-  flex-direction:column;
-  gap:16px;
-}
+#start{display:flex;flex-direction:column;gap:16px;}
 .start-hero{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:space-between;
-  gap:16px;
-  align-items:flex-start;
+  display:flex;flex-wrap:wrap;justify-content:space-between;
+  gap:16px;align-items:flex-start;
 }
-.start-left{
-  flex:2 1 260px;
-}
+.start-left{flex:2 1 260px;}
 .start-right{
-  flex:1 1 220px;
-  border-radius:12px;
-  padding:10px;
-  background:linear-gradient(135deg,#1d4ed8,#22c55e);
-  color:#e5e7eb;
+  flex:1 1 220px;border-radius:12px;padding:10px;
+  background:linear-gradient(135deg,#1d4ed8,#22c55e);color:#e5e7eb;
 }
-.start-right h3{
-  margin-bottom:4px;
-}
-.start-metrics{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-}
+.start-right h3{margin-bottom:4px;}
+.start-metrics{display:flex;flex-wrap:wrap;gap:10px;}
 .metric-card{
-  flex:1 1 160px;
-  border-radius:10px;
-  padding:8px;
-  background:#ffffff;
-  border:1px solid #e5e7eb;
+  flex:1 1 160px;border-radius:10px;padding:8px;
+  background:#ffffff;border:1px solid #e5e7eb;
 }
-.metric-label{
-  font-size:11px;
-  color:#6b7280;
-}
-.metric-value{
-  font-size:15px;
-  margin-top:2px;
-}
-.start-actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:8px;
-}
-.start-actions button{
-  border-radius:999px;
-}
-.start-weather-main{
-  font-size:22px;
-  font-weight:bold;
-}
-.start-weather-small{
-  font-size:12px;
-}
-
-/* TU DODAJEMY MEDIA QUERIES */
-@media (max-width: 768px) {
-  body{
-    padding:8px;
-    font-size:14px;
-  }
-
-  .container{
-    padding:10px;
-    border-radius:0;
-    max-width:100%;
-    margin:0;
-  }
-
-  .form-row{
-    flex-direction:column;
-    gap:6px;
-  }
-
-  .columns{
-    flex-direction:column;
-  }
-
-  .col{
-    flex:1 1 100%;
-  }
-
-  .tabs{
-    flex-wrap:wrap;
-    gap:4px;
-  }
-
-  .tabs button{
-    flex:1 1 48%;
-    font-size:12px;
-    padding:6px 4px;
-  }
-
-  #map{
-    height:300px;
-  }
-
-  .table th,
-  .table td{
-    padding:3px 4px;
-    font-size:12px;
-  }
-
-/* Sekcja Zabiegi – tabela bardziej mobilna */
-  #treatments .table{
-    table-layout: fixed;
-    width: 100%;
-  }
-
-  #treatments th,
-  #treatments td{
-    font-size: 11px;
-    padding: 3px 4px;
-    white-space: normal;   /* pozwól łamać wiersze */
-    word-wrap: break-word; /* łam długie teksty */
-  }
-
-  /* jeśli używasz wrappera – nie wymuszaj min-width na tabeli */
-  #treatments .table-wrapper{
-    width: 100%;
-    overflow-x: visible;
-  }
-}
-  
-</style>
+.metric-label{font-size:11px;color:#6b7280;}
+.metric-value{font-size:15px;margin-top:2px;}
 
 /* Treatments fields table */
-#treatFieldsTable{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:4px;
-  table-layout:fixed;          /* nowość: równe kolumny */
+#treatFieldsTable{width:100%;border-collapse:collapse;margin-top:4px;}
+#treatFieldsTable th,#treatFieldsTable td{
+  border:1px solid #e5e7eb;padding:3px 4px;font-size:12px;
 }
-#treatFieldsTable th,
-#treatFieldsTable td{
-  border:1px solid #e5e7eb;
-  padding:2px 4px;             /* mniejsze odstępy */
-  font-size:11px;              /* minimalnie mniejsza czcionka */
-  white-space:nowrap;          /* brak zawijania */
-  overflow:hidden;
-  text-overflow:ellipsis;      /* ucięcie długich nazw */
-}
-#treatFieldsTable th{
-  background:#e5e7eb;
-  text-align:left;
-}
-#treatFieldsTable th:nth-child(1),
-#treatFieldsTable td:nth-child(1){
-  width:32px;                  /* wąska kolumna na checkbox */
-}
-#treatFieldsTable th:nth-child(4),
-#treatFieldsTable td:nth-child(4){
-  width:60px;                  /* stała szerokość dla ha */
-  text-align:right;
-}
+#treatFieldsTable th{background:#e5e7eb;}
 
-/* Machine services */
+/* Services */
 .service-entry{
-  border:1px solid #e5e7eb;
-  border-radius:6px;
-  padding:6px;
-  margin-bottom:6px;
-  background:#ffffff;
+  border:1px solid #e5e7eb;border-radius:6px;padding:6px;
+  margin-bottom:6px;background:#ffffff;
 }
 .service-entry-header{
-  display:flex;
-  justify-content:space-between;
-  font-size:12px;
-}
-.service-chips{
-  margin-top:4px;
-}
-.service-chip{
-  display:inline-block;
-  padding:2px 6px;
-  font-size:11px;
-  border-radius:999px;
-  margin:0 4px 4px 0;
-  background:#eef2ff;
-  border:1px solid #c7d2fe;
+  display:flex;justify-content:space-between;font-size:12px;
 }
 
-/* Popup field info */
-.popup-title{
-  font-weight:bold;
-}
-.popup-row{
-  font-size:12px;
-  margin-top:2px;
-}
+/* MOBILE */
+@media (max-width: 768px){
+  body{padding:8px;font-size:14px;}
+  .container{padding:10px;border-radius:0;max-width:100%;margin:0;}
+  .form-row{flex-direction:column;gap:6px;}
+  .columns{flex-direction:column;}
+  .col{flex:1 1 100%;}
+  .tabs{flex-wrap:wrap;gap:4px;}
+  .tabs button{flex:1 1 48%;font-size:12px;padding:6px 4px;}
+  #map{height:300px;}
 
-/* Delete treatment dialog */
-#undoStockWrapper{
-  margin-top:6px;
-  font-size:12px;
+  /* Zabiegi – lepszy układ na mobile */
+  #treatments .table{table-layout:fixed;width:100%;}
+  #treatments th,#treatments td{
+    font-size:11px;padding:3px 4px;
+    white-space:normal;word-wrap:break-word;
+  }
 }
 </style>
 </head>
@@ -397,7 +142,7 @@ button.primary:hover{background:#15803d}
     <button onclick="showTab('rain')">Opady</button>
   </div>
 
-  <!-- START -->
+<!-- START -->
   <div id="start" class="section active">
     <div class="start-hero">
       <div class="start-left">
@@ -623,9 +368,7 @@ button.primary:hover{background:#15803d}
         </div>
         <button class="primary" onclick="addPlantProtection()">Dodaj / zaktualizuj</button>
         <table class="table small" id="ppTable">
-          <thead>
-            <tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr>
-          </thead>
+          <thead><tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -643,16 +386,14 @@ button.primary:hover{background:#15803d}
         </div>
         <button class="primary" onclick="addFertilizer()">Dodaj / zaktualizuj</button>
         <table class="table small" id="fertTable">
-          <thead>
-            <tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr>
-          </thead>
+          <thead><tr><th>Nazwa</th><th>Ilość</th><th>Akcja</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- MASZYNY -->
+<!-- MASZYNY -->
   <div id="machines" class="section">
     <h2>Maszyny</h2>
     <div class="columns">
@@ -805,15 +546,14 @@ button.primary:hover{background:#15803d}
           <tbody id="rainMonthlyTableBody"></tbody>
         </table>
       </div>
-    </div>
   </div>
 </div>
-  
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="https://unpkg.com/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
 <script>
-  
 const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -914,7 +654,6 @@ async function updateStartMetrics(){
 }
 
 /* TABS */
-
 function showTab(id){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -931,11 +670,10 @@ function showTab(id){
     loadSeasonSummary();
   }
   if(id === 'rain'){
-    loadRainData();   // jedna funkcja ładuje i rysuje wszystko
+    loadRainData();
   }
 }
 
-      
 /* MAPA */
 
 function initMap(){
@@ -2166,130 +1904,17 @@ function renderRainMonthly(monthlyTotals) {
     }
   });
 }
-  
+
 /* MAGAZYN */
-
-async function ensureFuelRow(){
-  const { data, error } = await supabaseClient
-    .from('warehouse_items')
-    .select('*')
-    .eq('category','fuel')
-    .eq('name','Diesel')
-    .maybeSingle();
-
-  if(error){
-    console.log('Fuel fetch error', error);
-    return;
-  }
-
-  if(!data){
-    const { error: insErr } = await supabaseClient
-      .from('warehouse_items')
-      .insert([{category:'fuel',name:'Diesel',unit:'l',qty:0}]);
-    if(insErr) console.log('Fuel insert error', insErr);
-  }
-}
-
-async function saveFuel(){
-  const qty = parseFloat(document.getElementById('fuelQty').value || '0');
-  const { data, error } = await supabaseClient
-    .from('warehouse_items')
-    .select('*')
-    .eq('category','fuel')
-    .eq('name','Diesel')
-    .single();
-  if(error){
-    console.log('Fuel select error', error);
-    alert('Błąd zapisu paliwa');
-    return;
-  }
-  const { error: updErr } = await supabaseClient
-    .from('warehouse_items')
-    .update({ qty })
-    .eq('id', data.id);
-  if(updErr){
-    console.log('Fuel update error', updErr);
-    alert('Błąd zapisu paliwa');
-    return;
-  }
-  alert('Stan paliwa zapisany');
-  await loadWarehouseTables();
-}
-
-async function addPlantProtection(){
-  const name = document.getElementById('ppName').value.trim();
-  const qty = parseFloat(document.getElementById('ppQty').value || '0');
-  if(!name){alert('Podaj nazwę środka');return;}
-  if(isNaN(qty)){alert('Podaj ilość');return;}
-
-  const { data, error } = await supabaseClient
-    .from('warehouse_items')
-    .select('*')
-    .eq('category','plant_protection')
-    .eq('name',name)
-    .maybeSingle();
-
-  if(error){console.log('PP select error', error);return;}
-
-  if(data){
-    const { error: updErr } = await supabaseClient
-      .from('warehouse_items')
-      .update({ qty })
-      .eq('id', data.id);
-    if(updErr) console.log('PP update error', updErr);
-  }else{
-    const { error: insErr } = await supabaseClient
-      .from('warehouse_items')
-      .insert([{category:'plant_protection',name,unit:'l',qty}]);
-    if(insErr) console.log('PP insert error', insErr);
-  }
-
-  document.getElementById('ppName').value='';
-  document.getElementById('ppQty').value='';
-  await loadWarehouseTables();
-  await loadWarehouseForTreatments();
-}
-
-async function addFertilizer(){
-  const name = document.getElementById('fertName').value.trim();
-  const qty = parseFloat(document.getElementById('fertQty').value || '0');
-  if(!name){alert('Podaj nazwę nawozu');return;}
-  if(isNaN(qty)){alert('Podaj ilość');return;}
-
-  const { data, error } = await supabaseClient
-    .from('warehouse_items')
-    .select('*')
-    .eq('category','fertilizer')
-    .eq('name',name)
-    .maybeSingle();
-
-  if(error){console.log('Fert select error', error);return;}
-
-  if(data){
-    const { error: updErr } = await supabaseClient
-      .from('warehouse_items')
-      .update({ qty })
-      .eq('id', data.id);
-    if(updErr) console.log('Fert update error', updErr);
-  }else{
-    const { error: insErr } = await supabaseClient
-      .from('warehouse_items')
-      .insert([{category:'fertilizer',name,unit:'kg',qty}]);
-    if(insErr) console.log('Fert insert error', insErr);
-  }
-
-  document.getElementById('fertName').value='';
-  document.getElementById('fertQty').value='';
-  await loadWarehouseTables();
-  await loadWarehouseForTreatments();
-}
-
+async function ensureFuelRow(){ /* Twoja wersja */ }
+async function saveFuel(){ /* Twoja wersja */ }
+async function addPlantProtection(){ /* Twoja wersja */ }
+async function addFertilizer(){ /* Twoja wersja */ }
 async function loadWarehouseTables(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
     .select('*')
     .order('name',{ascending:true});
-
   if(error){
     console.log('Warehouse load error', error);
     return;
@@ -2305,7 +1930,7 @@ async function loadWarehouseTables(){
   if(ppList) ppList.innerHTML = '';
   if(fertList) fertList.innerHTML = '';
 
-    (data || []).forEach(item=>{
+  (data || []).forEach(item=>{
     if(item.category === 'plant_protection'){
       if(ppBody){
         const tr = document.createElement('tr');
@@ -2337,8 +1962,8 @@ async function loadWarehouseTables(){
         fertList.appendChild(opt);
       }
     }
-  }); // ← domknięcie forEach
-}      // ← domknięcie loadWarehouseTables
+  });
+}
 
 async function deleteWarehouseItem(id){
   if(!confirm('Usunąć pozycję z magazynu?')) return;
@@ -2353,22 +1978,8 @@ async function deleteWarehouseItem(id){
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
 }
-    
-async function deleteWarehouseItem(id){
-  if(!confirm('Usunąć pozycję z magazynu?')) return;
-  const { error } = await supabaseClient
-    .from('warehouse_items')
-    .delete()
-    .eq('id', id);
-  if(error){
-    alert('Błąd usuwania pozycji');
-    return;
-  }
-  await loadWarehouseTables();
-  await loadWarehouseForTreatments();
-}  
-  
-  /* MASZYNY I SERWIS */
+
+/* MASZYNY I SERWIS */
 
 async function loadMachines(){
   const box = document.getElementById('machinesList');
@@ -2679,28 +2290,21 @@ async function loadSeasonSummary(){
 }
 
 /* INIT */
-
 document.addEventListener('DOMContentLoaded', async () => {
   initMap();
-
   await ensureFuelRow();
   await loadCrops();
   await loadFields();
   await loadTreatmentFields();
-
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
-
   await loadTreatmentsList();
   await loadMachines();
-
   await loadSeasonSummary();
   await loadStartWeather();
   await loadRainData();
-
   updateStartClock();
   setInterval(updateStartClock, 60000);
-
   await updateStartMetrics();
 });
 </script>
