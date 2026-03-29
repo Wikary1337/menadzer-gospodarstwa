@@ -1265,6 +1265,8 @@ async function deleteField(fieldId){
   
 /* ZABieGI – pola w tabeli */
 
+/* ZABIEGI – pola w tabeli */
+
 async function loadTreatmentFields(){
   const body = document.getElementById('treatFieldsList');
 
@@ -1293,17 +1295,19 @@ async function loadTreatmentFields(){
   body.innerHTML = '';
 
   data.forEach(field => {
-    let cropName = '—';
-    if (field.crops && field.crops.name) {
-      cropName = field.crops.name;
-    }
+    const cropName = (field.crops && field.crops.name) ? field.crops.name : '—';
+    const area = Number(field.area_ha || 0);
 
-       const tr = document.createElement('tr');
+    const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="checkbox" value="${field.id}" data-area="${field.area_ha}"></td>
+      <td>
+        <input type="checkbox"
+               value="${field.id}"
+               data-area="${area}">
+      </td>
       <td>${field.name}</td>
       <td>${cropName}</td>
-      <td>${Number(field.area_ha).toFixed(2)}</td>
+      <td style="text-align:right;">${area.toFixed(2)}</td>
     `;
     body.appendChild(tr);
   });
