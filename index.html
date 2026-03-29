@@ -454,27 +454,29 @@ button.primary:hover{background:#15803d}
       </div>
 
       <div class="col">
-        <label>Środki z magazynu (bez paliwa)</label>
-        <table class="table small">
-          <thead>
-            <tr>
-              <th>Pozycja magazynu</th>
-              <th>Ilość [jedn]</th>
-              <th>Dawka / ha</th>
-            </tr>
-          </thead>
-          <tbody id="treatItemsBody">
-            <tr>
-              <td>
-                <select class="treatItemSelect">
-                  <option value="">-- wybierz --</option>
-                </select>
-              </td>
-              <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
-              <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
-            </tr>
-          </tbody>
-        </table>
+       <label>Środki z magazynu (bez paliwa)</label>
+<table class="table small">
+  <thead>
+    <tr>
+      <th>Pozycja magazynu</th>
+      <th>Ilość [jedn]</th>
+      <th>Dawka / ha</th>
+      <th>Akcja</th> <!-- nowa kolumna -->
+    </tr>
+  </thead>
+  <tbody id="treatItemsBody">
+    <tr>
+      <td>
+        <select class="treatItemSelect">
+          <option value="">-- wybierz --</option>
+        </select>
+      </td>
+      <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
+      <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+      <td><button type="button" onclick="removeTreatItemRow(this)">Usuń</button></td>
+    </tr>
+  </tbody>
+</table>
         <button class="primary" style="margin-top:6px;" onclick="addTreatmentItemRow()">Dodaj kolejny środek</button>
 
         <h3 style="margin-top:8px;">Środki jednorazowe (poza magazynem)</h3>
@@ -1368,7 +1370,7 @@ function fillWarehouseSelect(selectElement, warehouseData){
 }
   
 function addTreatmentItemRow(){
-  const tbody = document.getElementById('treatItemsBody');
+  const body = document.getElementById('treatItemsBody');
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>
@@ -1378,9 +1380,11 @@ function addTreatmentItemRow(){
     </td>
     <td><input type="number" step="0.01" class="treatItemAmount" style="width:80px"></td>
     <td><input type="number" step="0.01" class="treatItemDose" style="width:80px" readonly></td>
+    <td><button type="button" onclick="removeTreatItemRow(this)">Usuń</button></td>
   `;
-  tbody.appendChild(tr);
-
+  body.appendChild(tr);
+  // jeśli gdzieś uzupełniasz selecty z magazynu, pamiętaj tu to wywołać
+}
   const newSelect = tr.querySelector('.treatItemSelect');
 
   // jeśli mamy cache z magazynu – od razu wypełniamy
@@ -1418,6 +1422,13 @@ function removeExtraItemRow(btn){
   }
 }
 
+  function removeTreatItemRow(btn){
+  const tr = btn.closest('tr');
+  if(tr && tr.parentNode){
+    tr.parentNode.removeChild(tr);
+  }
+}
+  
 function computeDosesForTreatmentRows(totalArea){
   const rows = document.querySelectorAll('#treatItemsBody tr');
   rows.forEach(row=>{
