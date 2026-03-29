@@ -1383,17 +1383,15 @@ function addTreatmentItemRow(){
     <td><button type="button" onclick="removeTreatItemRow(this)">Usuń</button></td>
   `;
   body.appendChild(tr);
-  // jeśli gdzieś uzupełniasz selecty z magazynu, pamiętaj tu to wywołać
-}
+
   const newSelect = tr.querySelector('.treatItemSelect');
 
-  // jeśli mamy cache z magazynu – od razu wypełniamy
   if(window._warehouseForTreatmentsCache && window._warehouseForTreatmentsCache.length){
     fillWarehouseSelect(newSelect);
   }else{
-    // jeśli nie ma cache, pobierz z Supabase i wtedy wypełnij wszystko
     loadWarehouseForTreatments();
   }
+}
 
 function addExtraItemRow(){
   const tbody = document.getElementById('extraItemsBody');
