@@ -238,68 +238,76 @@ button.primary:hover{background:#15803d}
   font-size:12px;
 }
 
-  /* TU DODAJEMY MEDIA QUERIES */
-  @media (max-width: 768px) {
-    body{
-      padding:8px;
-      font-size:14px;
-    }
-
-    .container{
-      padding:10px;
-      border-radius:0;
-      max-width:100%;
-      margin:0;
-    }
-
-    .form-row{
-      flex-direction:column;
-      gap:6px;
-    }
-
-    .columns{
-      flex-direction:column;
-    }
-
-    .col{
-      flex:1 1 100%;
-    }
-
-    .tabs{
-      flex-wrap:wrap;
-      gap:4px;
-    }
-
-    .tabs button{
-      flex:1 1 48%;
-      font-size:12px;
-      padding:6px 4px;
-    }
-
-    #map{
-      height:300px;
-    }
-
-    .table th,
-    .table td{
-      padding:3px 4px;
-      font-size:12px;
-      
-/* Tylko sekcja Zabiegi */
-  #treatments .form-row {
-    flex-direction: column;
-    align-items: stretch;
+/* TU DODAJEMY MEDIA QUERIES */
+@media (max-width: 768px) {
+  body{
+    padding:8px;
+    font-size:14px;
   }
 
-  #treatments .col {
-    flex: 1 1 100%;
+  .container{
+    padding:10px;
+    border-radius:0;
+    max-width:100%;
+    margin:0;
+  }
+
+  .form-row{
+    flex-direction:column;
+    gap:6px;
+  }
+
+  .columns{
+    flex-direction:column;
+  }
+
+  .col{
+    flex:1 1 100%;
+  }
+
+  .tabs{
+    flex-wrap:wrap;
+    gap:4px;
+  }
+
+  .tabs button{
+    flex:1 1 48%;
+    font-size:12px;
+    padding:6px 4px;
+  }
+
+  #map{
+    height:300px;
+  }
+
+  .table th,
+  .table td{
+    padding:3px 4px;
+    font-size:12px;
+  }
+
+  /* Tylko sekcja Zabiegi */
+  #treatments .form-row{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  #treatments .col{
+    flex:1 1 100%;
   }
 
   /* Żeby tabele nie wychodziły poza ekran */
-  #treatments table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
+  #treatments table{
+    display:block;
+    width:100%;
+    overflow-x:auto;
+  }
+
+  /* dodatkowe zawężenie tekstu w tabelach Zabiegów */
+  #treatments th,
+  #treatments td{
+    font-size:11px;
+    white-space:nowrap;
   }
 }
 </style>
