@@ -1370,10 +1370,14 @@ function addTreatmentItemRow(){
   `;
   tbody.appendChild(tr);
 
-  // uzupełniamy TYLKO select w nowym wierszu
   const newSelect = tr.querySelector('.treatItemSelect');
-  if(newSelect){
+
+  // jeśli mamy cache z magazynu – od razu wypełniamy
+  if(window._warehouseForTreatmentsCache && window._warehouseForTreatmentsCache.length){
     fillWarehouseSelect(newSelect);
+  }else{
+    // jeśli nie ma cache, pobierz z Supabase i wtedy wypełnij wszystko
+    loadWarehouseForTreatments();
   }
 }
 
