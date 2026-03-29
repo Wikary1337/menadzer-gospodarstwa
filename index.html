@@ -129,11 +129,8 @@ button.primary:hover{background:#15803d}
   flex:1 1 260px;
 }
 .checkbox-list{
-  max-height:200px;
-  overflow:auto;
-  border:1px solid #e5e7eb;
-  border-radius:6px;
-  background:#ffffff;
+  max-height:none;
+  overflow:visible;
 }
 
 #mapSearchRow{
@@ -451,8 +448,7 @@ button.primary:hover{background:#15803d}
     <div class="form-row">
       <div class="col">
         <label>Pola objęte zabiegiem</label>
-        <div class="checkbox-list small">
-    <table id="treatFieldsTable">
+<div class="checkbox-list small" id="treatFieldsList">
   <thead>
     <tr>
       <th></th>
@@ -1261,9 +1257,9 @@ async function deleteField(fieldId){
   await updateStartMetrics();
 }
 
-// ====== ZABIEGI ======
+// ====== ZABIEGI – pola w tabeli (lista labeli) ======
 async function loadTreatmentFields(){
-  const body = document.getElementById('treatFieldsList');
+  const list = document.getElementById('treatFieldsList');
 
   const { data, error } = await supabaseClient
     .from('fields')
@@ -1275,52 +1271,59 @@ async function loadTreatmentFields(){
         name
       )
     `)
-    .order('name',{ ascending:true });
+    .order('name', { ascending:true });
 
   if(error){
     console.log('Load treat fields error', error);
-    body.innerHTML = '<tr><td colspan="4">Błąd ładowania pól</td></tr>';
+    list.textContent = 'Błąd ładowania pól';
     return;
   }
   if(!data || data.length === 0){
-    body.innerHTML = '<tr><td colspan="4">Brak pól – dodaj pola w zakładce Pola.</td></tr>';
+    list.textContent = 'Brak pól – dodaj pola w zakładce Pola.';
     return;
   }
 
-  body.innerHTML = '';
+  list.innerHTML = '';
 
   data.forEach(field => {
     const cropName = (field.crops && field.crops.name) ? field.crops.name : '—';
     const area = Number(field.area_ha || 0);
 
-    const tr = document.createElement('tr');
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.fontSize = '12px';
+    label.style.padding = '1px 2px';
 
-    const tdCheck = document.createElement('td');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.value = field.id;
     checkbox.dataset.area = String(area);
-    tdCheck.appendChild(checkbox);
+    checkbox.style.marginRight = '6px';
 
-    const tdName = document.createElement('td');
-    tdName.textContent = field.name;
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = field.name;
+    nameSpan.style.flex = '1';
 
-    const tdCrop = document.createElement('td');
-    tdCrop.textContent = cropName;
+    const cropSpan = document.createElement('span');
+    cropSpan.textContent = cropName;
+    cropSpan.style.flex = '1';
+    cropSpan.style.color = '#6b7280';
 
-    const tdArea = document.createElement('td');
-    tdArea.textContent = area.toFixed(2);
-    tdArea.style.textAlign = 'right';
+    const areaSpan = document.createElement('span');
+    areaSpan.textContent = area.toFixed(2) + ' ha';
+    areaSpan.style.width = '70px';
+    areaSpan.style.textAlign = 'right';
 
-    tr.appendChild(tdCheck);
-    tr.appendChild(tdName);
-    tr.appendChild(tdCrop);
-    tr.appendChild(tdArea);
+    label.appendChild(checkbox);
+    label.appendChild(nameSpan);
+    label.appendChild(cropSpan);
+    label.appendChild(areaSpan);
 
-    body.appendChild(tr);
+    list.appendChild(label);
   });
 }
-
+  
 async function loadWarehouseForTreatments(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
