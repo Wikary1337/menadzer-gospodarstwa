@@ -2682,19 +2682,25 @@ async function loadSeasonSummary(){
 
 document.addEventListener('DOMContentLoaded', async () => {
   initMap();
+
   await ensureFuelRow();
   await loadCrops();
   await loadFields();
   await loadTreatmentFields();
+
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
+
   await loadTreatmentsList();
   await loadMachines();
+
   await loadSeasonSummary();
   await loadStartWeather();
   await loadRainData();
+
   updateStartClock();
   setInterval(updateStartClock, 60000);
+
   await updateStartMetrics();
 });
 </script>
