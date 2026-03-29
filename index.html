@@ -1435,8 +1435,8 @@ async function loadTreatmentFields(){
   });
 
   list.innerHTML = '';
-  
-data.forEach(field => {
+
+  data.forEach(field => {
     const cropName = (field.crops && field.crops.name) ? field.crops.name : '—';
     const area = Number(field.area_ha || 0);
 
@@ -1471,8 +1471,9 @@ data.forEach(field => {
 
     list.appendChild(label);
   });
+} // ← koniec loadTreatmentFields
 
-  // podświetlanie zaznaczonych pól w Zabiegach
+// podświetlanie zaznaczonych pól w Zabiegach – POZA funkcją
 document.addEventListener('change', e => {
   if(e.target.closest('#treatFieldsList') && e.target.type === 'checkbox'){
     const label = e.target.closest('label');
