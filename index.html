@@ -2381,17 +2381,17 @@ async function loadWarehouseTables(){
     return;
   }
 
-  const ppBody = document.querySelector('#ppTable tbody');
+  const ppBody   = document.querySelector('#ppTable tbody');
   const fertBody = document.querySelector('#fertTable tbody');
-  const ppList = document.getElementById('ppNameList');
+  const ppList   = document.getElementById('ppNameList');
   const fertList = document.getElementById('fertNameList');
 
-  if(ppBody) ppBody.innerHTML = '';
+  if(ppBody)   ppBody.innerHTML   = '';
   if(fertBody) fertBody.innerHTML = '';
-  if(ppList) ppList.innerHTML = '';
+  if(ppList)   ppList.innerHTML   = '';
   if(fertList) fertList.innerHTML = '';
 
-    (data || []).forEach(item=>{
+  (data || []).forEach(item=>{
     if(item.category === 'plant_protection'){
       if(ppBody){
         const tr = document.createElement('tr');
@@ -2423,36 +2423,26 @@ async function loadWarehouseTables(){
         fertList.appendChild(opt);
       }
     }
-  }); // ← domknięcie forEach
-}      // ← domknięcie loadWarehouseTables
+  });
+}
 
 async function deleteWarehouseItem(id){
   if(!confirm('Usunąć pozycję z magazynu?')) return;
+
   const { error } = await supabaseClient
     .from('warehouse_items')
     .delete()
     .eq('id', id);
+
   if(error){
     alert('Błąd usuwania pozycji');
+    console.log('Warehouse delete error', error);
     return;
   }
+
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
 }
-    
-async function deleteWarehouseItem(id){
-  if(!confirm('Usunąć pozycję z magazynu?')) return;
-  const { error } = await supabaseClient
-    .from('warehouse_items')
-    .delete()
-    .eq('id', id);
-  if(error){
-    alert('Błąd usuwania pozycji');
-    return;
-  }
-  await loadWarehouseTables();
-  await loadWarehouseForTreatments();
-}  
   
   /* MASZYNY I SERWIS */
 
