@@ -965,7 +965,6 @@ async function updateStartMetrics(){
 }
 
 /* TABS */
-
 function showTab(id){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -978,16 +977,19 @@ function showTab(id){
   if(id === 'fields' && map){
     setTimeout(()=>map.invalidateSize(),50);
   }
+  if(id === 'warehouse'){
+    loadWarehouseTables();
+  }
+  if(id === 'machines'){
+    loadMachines();
+  }
   if(id === 'seasons'){
     loadSeasonSummary();
   }
   if(id === 'rain'){
-    loadRainToday();
-    loadRain7Days();
-    loadRainMonthly();
+    loadRainData();  // ← tylko ta funkcja, żadnego loadRainToday()
   }
 }
-
       
 /* MAPA */
 
