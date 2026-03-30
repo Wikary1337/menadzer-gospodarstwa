@@ -2391,32 +2391,33 @@ async function loadWarehouseTables(){
   if(ppList)   ppList.innerHTML   = '';
   if(fertList) fertList.innerHTML = '';
 
-  (data || []).forEach(item=>{
-    if(item.category === 'plant_protection'){
-      if(ppBody){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.qty} ${item.unit}</td>
-          <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
-        `;
-        ppBody.appendChild(tr);
-      }
+ (data || []).forEach(item=>{
+  console.log('warehouse row:', item.id, item.name, item.category);
+  if(item.category === 'plant_protection'){
+    if(ppBody){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.qty} ${item.unit}</td>
+        <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
+      `;
+      ppBody.appendChild(tr);
+    }
       if(ppList){
         const opt = document.createElement('option');
         opt.value = item.name;
         ppList.appendChild(opt);
       }
-    }else if(item.category === 'fertilizer'){
-      if(fertBody){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.qty} ${item.unit}</td>
-          <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
-        `;
-        fertBody.appendChild(tr);
-      }
+     }else if(item.category === 'fertilizer'){
+    if(fertBody){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.qty} ${item.unit}</td>
+        <td><button onclick="deleteWarehouseItem(${item.id})">Usuń</button></td>
+      `;
+      fertBody.appendChild(tr);
+    }
       if(fertList){
         const opt = document.createElement('option');
         opt.value = item.name;
@@ -2427,6 +2428,7 @@ async function loadWarehouseTables(){
 }
 
 async function deleteWarehouseItem(id){
+  console.log('deleteWarehouseItem called with id =', id);
   if(!confirm('Usunąć pozycję z magazynu?')) return;
 
   const { error } = await supabaseClient
@@ -2435,11 +2437,12 @@ async function deleteWarehouseItem(id){
     .eq('id', id);
 
   if(error){
-    alert('Błąd usuwania pozycji');
     console.log('Warehouse delete error', error);
+    alert('Błąd usuwania pozycji');
     return;
   }
 
+  console.log('Delete ok, reloading tables');
   await loadWarehouseTables();
   await loadWarehouseForTreatments();
 }
