@@ -2063,23 +2063,6 @@ document.addEventListener('change', e=>{
 
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
 
-async function loadRainData() {
-  console.log('loadRainData start');
-
-  const { data, error } = await supabaseClient
-    .from('rainmeasurements')
-    .select('created_at, amount_mm')
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    console.error('Błąd ładowania opadów', error);
-    return;
-  }
-
-  console.log('Rain rows:', data);
-  renderRainTables(data || []);
-}
-
 function renderRainTables(rows) {
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -2093,7 +2076,15 @@ function renderRainTables(rows) {
 
   rows.forEach(row => {
     const ts = new Date(row.created_at);
-    const mm = Number(row.amount_mm) || 0;
+    const mmRaw = Number(row.amount_mm);
+
+    // odrzuć ewidentne śmieci: NaN, ujemne, ekstremalne jednorazowe wartości
+    if (!isFinite(mmRaw) || mmRaw < 0 || mmRaw > 50) {
+      console.log('Ignoruję podejrzany pomiar opadu:', row);
+      return;
+    }
+
+    const mm = mmRaw;
 
     const dateStr = ts.toISOString().slice(0, 10);
     const hourStr = ts.toISOString().slice(11, 13) + ':00';
