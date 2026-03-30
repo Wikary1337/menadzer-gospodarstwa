@@ -2672,7 +2672,25 @@ async function loadMachineServices(machineId){
     box.appendChild(div);
   });
 }
+  
+//  O P A D Y  –  ŁADOWANIE I AGREGACJA
+async function loadRainData() {
+  console.log('loadRainData start');
 
+  const { data, error } = await supabaseClient
+    .from('rainmeasurements')
+    .select('created_at, amount_mm')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Błąd ładowania opadów', error);
+    return;
+  }
+
+  console.log('Rain rows:', data);
+  renderRainTables(data || []);
+}
+  
 /* SEZONY */
 
 async function loadSeasonSummary(){
