@@ -2115,9 +2115,13 @@ function renderRainTables(rows) {
   console.log('dailyLast7:', dailyLast7);
   console.log('monthlyTotals:', monthlyTotals);
 
-  renderRainToday(hourlyToday);
+ renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
+
+  renderRainTodayChart(hourlyToday);
+  renderRainLast7Chart(dailyLast7);
+  renderRainMonthlyChart(monthlyTotals)
 }
 
 function renderRainToday(hourlyToday) {
@@ -2200,8 +2204,65 @@ function renderRainMonthly(monthlyTotals) {
   });
 }
 
-/* MAGAZYN */
+// PROSTE WYKRESY OPADÓW (Chart.js)
 
+let rainTodayChart = null;
+let rain7daysChart = null;
+let rainMonthlyChart = null;
+
+// pomocnicza – budowa lub odświeżenie wykresu słupkowego
+function renderBarChart(canvasId, chartRefName, labels, values, labelText) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  if (window[chartRefName]) {
+    window[chartRefName].destroy();
+  }
+
+  window[chartRefName] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: labelText,
+        data: values,
+        backgroundColor: '#22c55e'
+      }]
+    },
+    options: {
+      scales: {
+        x: { ticks: { autoSkip: false } },
+        y: { beginAtZero: true }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+// DODATKOWE WERSJE render* DO WYKRESÓW
+// (wywołujemy je z renderRainTables obok tabel)
+
+function renderRainTodayChart(hourlyToday) {
+  const labels = Object.keys(hourlyToday).sort();        // 01:00, 03:00...
+  const values = labels.map(h => hourlyToday[h] || 0);   // mm
+  renderBarChart('rainTodayChart', 'rainTodayChart', labels, values, 'Opad [l/m²]');
+}
+
+function renderRainLast7Chart(dailyLast7) {
+  const labels = Object.keys(dailyLast7).sort();        // daty YYYY-MM-DD
+  const values = labels.map(d => dailyLast7[d] || 0);
+  renderBarChart('rain7daysChart', 'rain7daysChart', labels, values, 'Opad [l/m²]');
+}
+
+function renderRainMonthlyChart(monthlyTotals) {
+  const labels = Object.keys(monthlyTotals).sort();     // YYYY-MM
+  const values = labels.map(m => monthlyTotals[m] || 0);
+  renderBarChart('rainMonthlyChart', 'rainMonthlyChart', labels, values, 'Opad [l/m²]');
+}
+
+/* MAGAZYN */
 async function ensureFuelRow(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
