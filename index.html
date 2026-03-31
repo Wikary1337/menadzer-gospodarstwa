@@ -2819,7 +2819,17 @@ async function loadRainData() {
     return;
   }
 
-  renderRainTables(data || []);
+const { data: weatherRows, error: wErr } = await supabaseClient
+  .from('weather_measurements')
+  .select('created_at, temperature_c, pressure_pa')
+  .gte('created_at', fromIso)
+  .order('created_at', { ascending: true });
+
+if (wErr) {
+  console.error('Błąd ładowania pogody:', wErr);
+}
+
+renderRainTables(data || [], weatherRows || []);
 }
   
 /* SEZONY */
