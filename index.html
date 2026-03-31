@@ -2074,8 +2074,12 @@ function renderRainTables(rows) {
   const msInDay = 24 * 60 * 60 * 1000;
   const sevenDaysAgo = new Date(today.getTime() - 6 * msInDay);
 
-  rows.forEach(row => {
-    const ts = new Date(row.created_at);
+ rows.forEach(row => {
+    const tsUtc = new Date(row.created_at);
+    const tsLocal = new Date(
+      tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
+    );
+
     const mmRaw = Number(row.amount_mm);
 
     // odrzuć ewidentne śmieci: NaN, ujemne, ekstremalne jednorazowe wartości
@@ -2086,22 +2090,24 @@ function renderRainTables(rows) {
 
     const mm = mmRaw;
 
-    const dateStr = ts.toISOString().slice(0, 10);
-    const hourStr = ts.toISOString().slice(11, 13) + ':00';
-    const monthStr = ts.toISOString().slice(0, 7);
+    const dateStr = tsLocal.toISOString().slice(0, 10);      // YYYY-MM-DD (lokalnie)
+    const hourStr = tsLocal.toISOString().slice(11, 13) + ':00';
+    const monthStr = tsLocal.toISOString().slice(0, 7);      // YYYY-MM
 
     // Dzisiejsze – ostatni pomiar w danej godzinie
     if (dateStr === todayStr) {
       hourlyToday[hourStr] = mm;
     }
 
-    // Ostatnie 7 dni – suma dobowa
-    if (ts >= sevenDaysAgo && ts <= today) {
-      dailyLast7[dateStr] = (dailyLast7[dateStr] || 0) + mm;
+    // Ostatnie 7 dni – suma dzienna
+    if (tsLocal >= sevenDaysAgo && tsLocal <= today) {
+      if (!dailyLast7[dateStr]) dailyLast7[dateStr] = 0;
+      dailyLast7[dateStr] += mm;
     }
 
-    // Miesięczne – suma po YYYY-MM
-    monthlyTotals[monthStr] = (monthlyTotals[monthStr] || 0) + mm;
+    // Miesięczne – suma
+    if (!monthlyTotals[monthStr]) monthlyTotals[monthStr] = 0;
+    monthlyTotals[monthStr] += mm;
   });
 
   renderRainToday(hourlyToday);
