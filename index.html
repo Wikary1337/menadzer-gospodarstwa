@@ -2064,8 +2064,45 @@ document.addEventListener('change', e=>{
 
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
 
-function renderRainTables(rows) {
-  console.log('renderRainTables rows:', rows);
+async function loadRainData() {
+  console.log('loadRainData start');
+
+  const now = new Date();
+  const daysBack = 60; // ile dni wstecz pobiera z bazy
+
+  // data początkowa (UTC ISO)
+  const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  const fromIso = fromDate.toISOString(); // np. 2026-02-01T...
+
+  // OPADY
+  const { data, error } = await supabaseClient
+    .from('rainmeasurements')
+    .select('created_at, amount_mm, temperature_c, pressure_pa')
+    .gte('created_at', fromIso)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Błąd ładowania opadów:', error);
+    return;
+  }
+
+  // POGODA (BMP280)
+  const { data: weatherRows, error: wErr } = await supabaseClient
+    .from('weather_measurements')
+    .select('created_at, temperature_c, pressure_pa')
+    .gte('created_at', fromIso)
+    .order('created_at', { ascending: true });
+
+  if (wErr) {
+    console.error('Błąd ładowania pogody:', wErr);
+  }
+
+  renderRainTables(data || [], weatherRows || []);
+}
+
+function renderRainTables(rainRows, weatherRows) {
+  console.log('renderRainTables rainRows:', rainRows);
+  console.log('renderRainTables weatherRows:', weatherRows);
 
   const today = new Date();
   const todayLocal = new Date(
@@ -2086,7 +2123,8 @@ function renderRainTables(rows) {
   const msInDay = 24 * 60 * 60 * 1000;
   const sevenDaysAgo = new Date(todayLocal.getTime() - 6 * msInDay);
 
-  rows.forEach(row => {
+  // -------- 1) OPADY z rainRows --------
+  rainRows.forEach(row => {
     const tsUtc = new Date(row.created_at);
     const tsLocal = new Date(
       tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
@@ -2099,47 +2137,84 @@ function renderRainTables(rows) {
     }
     const mm = mmRaw;
 
-    const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
-    const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
-    const presHpa = presPa != null ? presPa / 100.0 : null; // BMP280 daje Pa
-
-    // data YYYY-MM-DD w czasie PL
     const year  = tsLocal.getFullYear();
     const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
     const day   = String(tsLocal.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
 
-    // godzina HH:00 w czasie PL
     const hour = String(tsLocal.getHours()).padStart(2, '0');
     const hourStr = `${hour}:00`;
 
-    // miesiąc YYYY-MM w czasie PL
     const monthStr = `${year}-${month}`;
 
-    // Dzisiejsze – ostatni pomiar w danej godzinie, z temp i ciśnieniem
+    // Dzisiejsze – ostatni pomiar w danej godzinie
     if (dateStr === todayStr) {
       if (!hourlyToday[hourStr]) {
         hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
       }
       hourlyToday[hourStr].mm = mm;
-      if (temp != null) hourlyToday[hourStr].temp = temp;
-      if (presHpa != null) hourlyToday[hourStr].pressure = presHpa;
     }
 
-    // Ostatnie 7 dni – suma opadów + T max/min + średnie ciśnienie
+    // Ostatnie 7 dni – suma opadów
     if (tsLocal >= sevenDaysAgo && tsLocal <= todayLocal) {
       if (!dailyLast7[dateStr]) {
         dailyLast7[dateStr] = {
           mm: 0,
-          tmax: temp,
-          tmin: temp,
-          pSum: presHpa != null ? presHpa : 0,
-          pCount: presHpa != null ? 1 : 0
+          tmax: null,
+          tmin: null,
+          pSum: 0,
+          pCount: 0
         };
       }
-      const d = dailyLast7[dateStr];
-      d.mm += mm;
+      dailyLast7[dateStr].mm += mm;
+    }
 
+    // Miesięczne – suma opadów
+    if (!monthlyTotals[monthStr]) monthlyTotals[monthStr] = 0;
+    monthlyTotals[monthStr] += mm;
+  });
+
+  // -------- 2) POGODA z weatherRows (BMP280) --------
+  weatherRows.forEach(row => {
+    const tsUtc = new Date(row.created_at);
+    const tsLocal = new Date(
+      tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
+    );
+
+    const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
+    const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
+    const presHpa = presPa != null ? presPa / 100.0 : null;
+
+    const year  = tsLocal.getFullYear();
+    const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
+    const day   = String(tsLocal.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    const hour = String(tsLocal.getHours()).padStart(2, '0');
+    const hourStr = `${hour}:00`;
+
+    if (tsLocal < sevenDaysAgo || tsLocal > todayLocal) return;
+
+    // Dzisiejsze – dokładamy T/p do godzin
+    if (dateStr === todayStr) {
+      if (!hourlyToday[hourStr]) {
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+      }
+      if (temp != null)    hourlyToday[hourStr].temp = temp;
+      if (presHpa != null) hourlyToday[hourStr].pressure = presHpa;
+    }
+
+    // Ostatnie 7 dni – T max/min + średnie ciśnienie
+    if (!dailyLast7[dateStr]) {
+      dailyLast7[dateStr] = {
+        mm: 0,
+        tmax: temp,
+        tmin: temp,
+        pSum: presHpa != null ? presHpa : 0,
+        pCount: presHpa != null ? 1 : 0
+      };
+    } else {
+      const d = dailyLast7[dateStr];
       if (temp != null) {
         if (d.tmax == null || temp > d.tmax) d.tmax = temp;
         if (d.tmin == null || temp < d.tmin) d.tmin = temp;
@@ -2149,10 +2224,6 @@ function renderRainTables(rows) {
         d.pCount += 1;
       }
     }
-
-    // Miesięczne – suma opadów
-    if (!monthlyTotals[monthStr]) monthlyTotals[monthStr] = 0;
-    monthlyTotals[monthStr] += mm;
   });
 
   // Przelicz średnie ciśnienie dzienne
@@ -2172,11 +2243,11 @@ function renderRainTables(rows) {
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
 
-  // wykresy: dziś i miesiąc bez zmian
+  // wykresy: dziś i miesiąc
   renderRainTodayChart(hourlyToday);
   renderRainMonthlyChart(monthlyTotals);
 
-  // wykres 7 dni – używamy tylko sum opadów
+  // wykres 7 dni – tylko suma opadów
   const dailyLast7ForChart = Object.fromEntries(
     Object.entries(dailyLast7).map(([d, v]) => [d, v.mm])
   );
@@ -2295,7 +2366,7 @@ function renderRainMonthly(monthlyTotals) {
   });
 }
 
-  // PROSTE WYKRESY OPADÓW (Chart.js)
+// PROSTE WYKRESY OPADÓW (Chart.js)
 
 let rainTodayChart = null;
 let rain7daysChart = null;
