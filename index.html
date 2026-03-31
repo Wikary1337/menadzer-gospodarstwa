@@ -2292,6 +2292,82 @@ function renderRainMonthly(monthlyTotals) {
     tbody.appendChild(tr);
   });
 }
+
+  // PROSTE WYKRESY OPADÓW (Chart.js)
+
+let rainTodayChart = null;
+let rain7daysChart = null;
+let rainMonthlyChart = null;
+
+function renderBarChart(canvasId, chartRef, labels, values, labelText) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  if (chartRef && typeof chartRef.destroy === 'function') {
+    chartRef.destroy();
+  }
+
+  const newChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: labelText,
+        data: values,
+        backgroundColor: '#22c55e'
+      }]
+    },
+    options: {
+      scales: {
+        x: { ticks: { autoSkip: false } },
+        y: { beginAtZero: true }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+
+  return newChart;
+}
+
+function renderRainTodayChart(hourlyToday) {
+  const labels = Object.keys(hourlyToday).sort();
+  const values = labels.map(h => (hourlyToday[h]?.mm ?? hourlyToday[h] ?? 0));
+  rainTodayChart = renderBarChart(
+    'rainTodayChart',
+    rainTodayChart,
+    labels,
+    values,
+    'Opad [l/m²]'
+  );
+}
+
+function renderRainLast7Chart(dailyLast7ForChart) {
+  const labels = Object.keys(dailyLast7ForChart).sort();
+  const values = labels.map(d => dailyLast7ForChart[d] || 0);
+  rain7daysChart = renderBarChart(
+    'rain7daysChart',
+    rain7daysChart,
+    labels,
+    values,
+    'Opad [l/m²]'
+  );
+}
+
+function renderRainMonthlyChart(monthlyTotals) {
+  const labels = Object.keys(monthlyTotals).sort();
+  const values = labels.map(m => monthlyTotals[m] || 0);
+  rainMonthlyChart = renderBarChart(
+    'rainMonthlyChart',
+    rainMonthlyChart,
+    labels,
+    values,
+    'Opad [l/m²]'
+  );
+}
+
+/* MAGAZYN */
   
 async function ensureFuelRow(){
   const { data, error } = await supabaseClient
