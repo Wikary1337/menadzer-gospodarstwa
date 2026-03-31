@@ -2065,16 +2065,20 @@ function renderRainTables(rows) {
   console.log('renderRainTables rows:', rows);
 
   const today = new Date();
-  const todayStr = new Date(
+  const todayLocal = new Date(
     today.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
-  ).toISOString().slice(0, 10);
+  );
+  const todayYear  = todayLocal.getFullYear();
+  const todayMonth = String(todayLocal.getMonth() + 1).padStart(2, '0');
+  const todayDay   = String(todayLocal.getDate()).padStart(2, '0');
+  const todayStr   = `${todayYear}-${todayMonth}-${todayDay}`;
 
   const hourlyToday = {};
   const dailyLast7 = {};
   const monthlyTotals = {};
 
   const msInDay = 24 * 60 * 60 * 1000;
-  const sevenDaysAgo = new Date(today.getTime() - 6 * msInDay);
+  const sevenDaysAgo = new Date(todayLocal.getTime() - 6 * msInDay);
 
   rows.forEach(row => {
     const tsUtc = new Date(row.created_at);
@@ -2089,9 +2093,18 @@ function renderRainTables(rows) {
     }
     const mm = mmRaw;
 
-    const dateStr = tsLocal.toISOString().slice(0, 10);
-    const hourStr = tsLocal.toISOString().slice(11, 13) + ':00';
-    const monthStr = tsLocal.toISOString().slice(0, 7);
+    // data YYYY-MM-DD w czasie PL
+    const year  = tsLocal.getFullYear();
+    const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
+    const day   = String(tsLocal.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    // godzina HH:00 w czasie PL
+    const hour = String(tsLocal.getHours()).padStart(2, '0');
+    const hourStr = `${hour}:00`;
+
+    // miesiąc YYYY-MM w czasie PL
+    const monthStr = `${year}-${month}`;
 
     // dzisiejsze – nadpisujemy ostatnią wartością
     if (dateStr === todayStr) {
@@ -2099,7 +2112,7 @@ function renderRainTables(rows) {
     }
 
     // ostatnie 7 dni – suma
-    if (tsLocal >= sevenDaysAgo && tsLocal <= today) {
+    if (tsLocal >= sevenDaysAgo && tsLocal <= todayLocal) {
       if (!dailyLast7[dateStr]) dailyLast7[dateStr] = 0;
       dailyLast7[dateStr] += mm;
     }
@@ -2113,13 +2126,13 @@ function renderRainTables(rows) {
   console.log('dailyLast7:', dailyLast7);
   console.log('monthlyTotals:', monthlyTotals);
 
- renderRainToday(hourlyToday);
+  renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
 
   renderRainTodayChart(hourlyToday);
   renderRainLast7Chart(dailyLast7);
-  renderRainMonthlyChart(monthlyTotals)
+  renderRainMonthlyChart(monthlyTotals);
 }
 
 function renderRainToday(hourlyToday) {
