@@ -810,53 +810,55 @@ button.primary:hover{background:#15803d}
     </div>
   </div>
 
-  <!-- OPADY -->
-  <div id="rain" class="section">
-    <h2>Opady</h2>
+<!-- OPADY -->
+<div id="rain" class="section">
+  <h2>Opady</h2>
 
-    <h3>Dzisiejsze opady</h3>
-    <p>
-      Razem: <span id="rainTodayTotal">0.0</span> l/m²
-    </p>
-    <table class="table small">
-      <thead>
-        <tr>
-          <th>Godzina</th>
-          <th>Opad [l/m²]</th>
-          <th>T [°C] / p [hPa]</th>
-        </tr>
-      </thead>
-      <tbody id="rainTodayTableBody"></tbody>
-    </table>
+  <h3>Dzisiejsze opady</h3>
+  <p>
+    Razem: <span id="rainTodayTotal">0.0</span> l/m²
+  </p>
+  <table class="table small">
+    <thead>
+      <tr>
+        <th>Godzina</th>
+        <th>Opad [l/m²]</th>
+        <th>T [°C] / p [hPa]</th>
+      </tr>
+    </thead>
+    <tbody id="rainTodayTableBody"></tbody>
+  </table>
 
-    <div class="columns" style="margin-top:16px;">
-      <div class="col">
-        <h3>Ostatnie 7 dni</h3>
-        <canvas id="rain7daysChart"></canvas>
-        <table class="table small" style="margin-top:8px;">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Opad [l/m²]</th>
-            </tr>
-          </thead>
-          <tbody id="rain7daysTableBody"></tbody>
-        </table>
-      </div>
+  <div class="columns" style="margin-top:16px;">
+    <div class="col">
+      <h3>Ostatnie 7 dni</h3>
+      <canvas id="rain7daysChart"></canvas>
+      <table class="table small" style="margin-top:8px;">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Opad [l/m²]</th>
+            <th>T max [°C]</th>
+            <th>T min [°C]</th>
+            <th>Ciśnienie [hPa]</th>
+          </tr>
+        </thead>
+        <tbody id="rain7daysTableBody"></tbody>
+      </table>
+    </div>
 
-      <div class="col">
-        <h3>Opady miesięczne</h3>
-        <canvas id="rainMonthlyChart"></canvas>
-        <table class="table small" style="margin-top:8px;">
-          <thead>
-            <tr>
-              <th>Miesiąc</th>
-              <th>Opad [l/m²]</th>
-            </tr>
-          </thead>
-          <tbody id="rainMonthlyTableBody"></tbody>
-        </table>
-      </div>
+    <div class="col">
+      <h3>Opady miesięczne</h3>
+      <canvas id="rainMonthlyChart"></canvas>
+      <table class="table small" style="margin-top:8px;">
+        <thead>
+          <tr>
+            <th>Miesiąc</th>
+            <th>Opad [l/m²]</th>
+          </tr>
+        </thead>
+        <tbody id="rainMonthlyTableBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
