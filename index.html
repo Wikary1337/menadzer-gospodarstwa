@@ -2064,8 +2064,12 @@ document.addEventListener('change', e=>{
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
 
 function renderRainTables(rows) {
+  console.log('renderRainTables rows:', rows);
+
   const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+  const todayStr = new Date(
+    today.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
+  ).toISOString().slice(0, 10);
 
   const hourlyToday = {};
   const dailyLast7 = {};
@@ -2074,41 +2078,42 @@ function renderRainTables(rows) {
   const msInDay = 24 * 60 * 60 * 1000;
   const sevenDaysAgo = new Date(today.getTime() - 6 * msInDay);
 
- rows.forEach(row => {
+  rows.forEach(row => {
     const tsUtc = new Date(row.created_at);
     const tsLocal = new Date(
       tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
     );
 
     const mmRaw = Number(row.amount_mm);
-
-    // odrzuć ewidentne śmieci: NaN, ujemne, ekstremalne jednorazowe wartości
     if (!isFinite(mmRaw) || mmRaw < 0 || mmRaw > 50) {
       console.log('Ignoruję podejrzany pomiar opadu:', row);
       return;
     }
-
     const mm = mmRaw;
 
-    const dateStr = tsLocal.toISOString().slice(0, 10);      // YYYY-MM-DD (lokalnie)
+    const dateStr = tsLocal.toISOString().slice(0, 10);
     const hourStr = tsLocal.toISOString().slice(11, 13) + ':00';
-    const monthStr = tsLocal.toISOString().slice(0, 7);      // YYYY-MM
+    const monthStr = tsLocal.toISOString().slice(0, 7);
 
-    // Dzisiejsze – ostatni pomiar w danej godzinie
+    // dzisiejsze – nadpisujemy ostatnią wartością
     if (dateStr === todayStr) {
       hourlyToday[hourStr] = mm;
     }
 
-    // Ostatnie 7 dni – suma dzienna
+    // ostatnie 7 dni – suma
     if (tsLocal >= sevenDaysAgo && tsLocal <= today) {
       if (!dailyLast7[dateStr]) dailyLast7[dateStr] = 0;
       dailyLast7[dateStr] += mm;
     }
 
-    // Miesięczne – suma
+    // miesięczne – suma
     if (!monthlyTotals[monthStr]) monthlyTotals[monthStr] = 0;
     monthlyTotals[monthStr] += mm;
   });
+
+  console.log('hourlyToday:', hourlyToday);
+  console.log('dailyLast7:', dailyLast7);
+  console.log('monthlyTotals:', monthlyTotals);
 
   renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
