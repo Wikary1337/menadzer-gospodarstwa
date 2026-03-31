@@ -2378,7 +2378,10 @@ function renderRainMonthly(monthlyTotals) {
   const months = Object.keys(monthlyTotals).sort();
 
   months.forEach(m => {
-    const mm = monthlyTotals[m];
+    const entry = monthlyTotals[m];
+    const mm = entry.mm;
+    const tmax = entry.tmax;
+    const tmin = entry.tmin;
 
     const tr = document.createElement('tr');
 
@@ -2386,10 +2389,18 @@ function renderRainMonthly(monthlyTotals) {
     tdMonth.textContent = m;
 
     const tdMm = document.createElement('td');
-    tdMm.textContent = mm.toFixed(2);
+    tdMm.textContent = mm != null ? mm.toFixed(2) : '-';
+
+    const tdTmax = document.createElement('td');
+    tdTmax.textContent = tmax != null ? tmax.toFixed(1) : '-';
+
+    const tdTmin = document.createElement('td');
+    tdTmin.textContent = tmin != null ? tmin.toFixed(1) : '-';
 
     tr.appendChild(tdMonth);
     tr.appendChild(tdMm);
+    tr.appendChild(tdTmax);
+    tr.appendChild(tdTmin);
     tbody.appendChild(tr);
   });
 }
