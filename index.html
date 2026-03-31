@@ -2208,16 +2208,15 @@ let rainTodayChart = null;
 let rain7daysChart = null;
 let rainMonthlyChart = null;
 
-// pomocnicza – budowa lub odświeżenie wykresu słupkowego
-function renderBarChart(canvasId, chartRefName, labels, values, labelText) {
+function renderBarChart(canvasId, chartRef, labels, values, labelText) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  if (window[chartRefName]) {
-    window[chartRefName].destroy();
+  if (chartRef && typeof chartRef.destroy === 'function') {
+    chartRef.destroy();
   }
 
-  window[chartRefName] = new Chart(ctx, {
+  const newChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
@@ -2237,27 +2236,44 @@ function renderBarChart(canvasId, chartRefName, labels, values, labelText) {
       }
     }
   });
+
+  return newChart;
 }
 
-// DODATKOWE WERSJE render* DO WYKRESÓW
-// (wywołujemy je z renderRainTables obok tabel)
-
 function renderRainTodayChart(hourlyToday) {
-  const labels = Object.keys(hourlyToday).sort();        // 01:00, 03:00...
-  const values = labels.map(h => hourlyToday[h] || 0);   // mm
-  renderBarChart('rainTodayChart', 'rainTodayChart', labels, values, 'Opad [l/m²]');
+  const labels = Object.keys(hourlyToday).sort();
+  const values = labels.map(h => hourlyToday[h] || 0);
+  rainTodayChart = renderBarChart(
+    'rainTodayChart',
+    rainTodayChart,
+    labels,
+    values,
+    'Opad [l/m²]'
+  );
 }
 
 function renderRainLast7Chart(dailyLast7) {
-  const labels = Object.keys(dailyLast7).sort();        // daty YYYY-MM-DD
+  const labels = Object.keys(dailyLast7).sort();
   const values = labels.map(d => dailyLast7[d] || 0);
-  renderBarChart('rain7daysChart', 'rain7daysChart', labels, values, 'Opad [l/m²]');
+  rain7daysChart = renderBarChart(
+    'rain7daysChart',
+    rain7daysChart,
+    labels,
+    values,
+    'Opad [l/m²]'
+  );
 }
 
 function renderRainMonthlyChart(monthlyTotals) {
-  const labels = Object.keys(monthlyTotals).sort();     // YYYY-MM
+  const labels = Object.keys(monthlyTotals).sort();
   const values = labels.map(m => monthlyTotals[m] || 0);
-  renderBarChart('rainMonthlyChart', 'rainMonthlyChart', labels, values, 'Opad [l/m²]');
+  rainMonthlyChart = renderBarChart(
+    'rainMonthlyChart',
+    rainMonthlyChart,
+    labels,
+    values,
+    'Opad [l/m²]'
+  );
 }
 
 /* MAGAZYN */
