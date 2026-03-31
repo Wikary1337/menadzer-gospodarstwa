@@ -853,8 +853,10 @@ button.primary:hover{background:#15803d}
       <table class="table small" style="margin-top:8px;">
         <thead>
           <tr>
-            <th>Miesiąc</th>
-            <th>Opad [l/m²]</th>
+           <th>Miesiąc</th>
+    <th>Opad [l/m²]</th>
+    <th>T max [°C]</th>
+    <th>T min [°C]</th>
           </tr>
         </thead>
         <tbody id="rainMonthlyTableBody"></tbody>
@@ -2117,114 +2119,140 @@ function renderRainTables(rainRows, weatherRows) {
   const hourlyToday = {};
   // 7 dni: data -> { mm, tmax, tmin, pSum, pCount }
   const dailyLast7 = {};
-  // Miesięczne: miesiąc -> mm
+  // Miesięczne: miesiąc -> { mm, tmax, tmin }
   const monthlyTotals = {};
 
   const msInDay = 24 * 60 * 60 * 1000;
   const sevenDaysAgo = new Date(todayLocal.getTime() - 6 * msInDay);
 
-  // -------- 1) OPADY z rainRows --------
-  rainRows.forEach(row => {
-    const tsUtc = new Date(row.created_at);
-    const tsLocal = new Date(
-      tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
-    );
+// -------- 1) OPADY z rainRows --------
+rainRows.forEach(row => {
+  const tsUtc = new Date(row.created_at);
+  const tsLocal = new Date(
+    tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
+  );
 
-    const mmRaw = Number(row.amount_mm);
-    if (!isFinite(mmRaw) || mmRaw < 0 || mmRaw > 50) {
-      console.log('Ignoruję podejrzany pomiar opadu:', row);
-      return;
+  const mmRaw = Number(row.amount_mm);
+  if (!isFinite(mmRaw) || mmRaw < 0 || mmRaw > 50) {
+    console.log('Ignoruję podejrzany pomiar opadu:', row);
+    return;
+  }
+  const mm = mmRaw;
+
+  const year  = tsLocal.getFullYear();
+  const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
+  const day   = String(tsLocal.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+
+  const hour = String(tsLocal.getHours()).padStart(2, '0');
+  const hourStr = `${hour}:00`;
+
+  const monthStr = `${year}-${month}`;
+
+  // Dzisiejsze – ostatni pomiar w danej godzinie
+  if (dateStr === todayStr) {
+    if (!hourlyToday[hourStr]) {
+      hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
     }
-    const mm = mmRaw;
+    hourlyToday[hourStr].mm = mm;
+  }
 
-    const year  = tsLocal.getFullYear();
-    const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
-    const day   = String(tsLocal.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-
-    const hour = String(tsLocal.getHours()).padStart(2, '0');
-    const hourStr = `${hour}:00`;
-
-    const monthStr = `${year}-${month}`;
-
-    // Dzisiejsze – ostatni pomiar w danej godzinie
-    if (dateStr === todayStr) {
-      if (!hourlyToday[hourStr]) {
-        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
-      }
-      hourlyToday[hourStr].mm = mm;
-    }
-
-    // Ostatnie 7 dni – suma opadów
-    if (tsLocal >= sevenDaysAgo && tsLocal <= todayLocal) {
-      if (!dailyLast7[dateStr]) {
-        dailyLast7[dateStr] = {
-          mm: 0,
-          tmax: null,
-          tmin: null,
-          pSum: 0,
-          pCount: 0
-        };
-      }
-      dailyLast7[dateStr].mm += mm;
-    }
-
-    // Miesięczne – suma opadów
-    if (!monthlyTotals[monthStr]) monthlyTotals[monthStr] = 0;
-    monthlyTotals[monthStr] += mm;
-  });
-
-  // -------- 2) POGODA z weatherRows (BMP280) --------
-  weatherRows.forEach(row => {
-    const tsUtc = new Date(row.created_at);
-    const tsLocal = new Date(
-      tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
-    );
-
-    const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
-    const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
-    const presHpa = presPa != null ? presPa / 100.0 : null;
-
-    const year  = tsLocal.getFullYear();
-    const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
-    const day   = String(tsLocal.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-
-    const hour = String(tsLocal.getHours()).padStart(2, '0');
-    const hourStr = `${hour}:00`;
-
-    if (tsLocal < sevenDaysAgo || tsLocal > todayLocal) return;
-
-    // Dzisiejsze – dokładamy T/p do godzin
-    if (dateStr === todayStr) {
-      if (!hourlyToday[hourStr]) {
-        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
-      }
-      if (temp != null)    hourlyToday[hourStr].temp = temp;
-      if (presHpa != null) hourlyToday[hourStr].pressure = presHpa;
-    }
-
-    // Ostatnie 7 dni – T max/min + średnie ciśnienie
+  // Ostatnie 7 dni – suma opadów
+  if (tsLocal >= sevenDaysAgo && tsLocal <= todayLocal) {
     if (!dailyLast7[dateStr]) {
       dailyLast7[dateStr] = {
         mm: 0,
-        tmax: temp,
-        tmin: temp,
-        pSum: presHpa != null ? presHpa : 0,
-        pCount: presHpa != null ? 1 : 0
+        tmax: null,
+        tmin: null,
+        pSum: 0,
+        pCount: 0
       };
-    } else {
-      const d = dailyLast7[dateStr];
-      if (temp != null) {
-        if (d.tmax == null || temp > d.tmax) d.tmax = temp;
-        if (d.tmin == null || temp < d.tmin) d.tmin = temp;
+    }
+    dailyLast7[dateStr].mm += mm;
+  }
+
+  // Miesięczne – suma opadów
+  if (!monthlyTotals[monthStr]) {
+    monthlyTotals[monthStr] = {
+      mm: 0,
+      tmax: null,
+      tmin: null
+    };
+  }
+  monthlyTotals[monthStr].mm += mm;
+});
+
+// -------- 2) POGODA z weatherRows (BMP280) --------
+weatherRows.forEach(row => {
+  const tsUtc = new Date(row.created_at);
+  const tsLocal = new Date(
+    tsUtc.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
+  );
+
+  const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
+  const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
+  const presHpa = presPa != null ? presPa / 100.0 : null;
+
+  const year  = tsLocal.getFullYear();
+  const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
+  const day   = String(tsLocal.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+
+  const hour = String(tsLocal.getHours()).padStart(2, '0');
+  const hourStr = `${hour}:00`;
+
+  const monthStr = `${year}-${month}`;
+
+  if (tsLocal < sevenDaysAgo || tsLocal > todayLocal) return;
+
+  // Dzisiejsze – dokładamy T/p do godzin
+  if (dateStr === todayStr) {
+    if (!hourlyToday[hourStr]) {
+      hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+    }
+    if (temp != null) hourlyToday[hourStr].temp = temp;
+    if (presHpa != null) hourlyToday[hourStr].pressure = presHpa;
+  }
+
+  // Ostatnie 7 dni – T max/min + średnie ciśnienie
+  if (!dailyLast7[dateStr]) {
+    dailyLast7[dateStr] = {
+      mm: 0,
+      tmax: temp,
+      tmin: temp,
+      pSum: presHpa != null ? presHpa : 0,
+      pCount: presHpa != null ? 1 : 0
+    };
+  } else {
+    const d = dailyLast7[dateStr];
+    if (temp != null) {
+      if (d.tmax == null || temp > d.tmax) d.tmax = temp;
+      if (d.tmin == null || temp < d.tmin) d.tmin = temp;
+    }
+    if (presHpa != null) {
+      d.pSum += presHpa;
+      d.pCount += 1;
+    }
+  }
+
+  // Miesięczne – T max / T min z weather_measurements
+  if (!monthlyTotals[monthStr]) {
+    monthlyTotals[monthStr] = {
+      mm: 0,
+      tmax: temp,
+      tmin: temp
+    };
+  } else {
+    if (temp != null) {
+      if (monthlyTotals[monthStr].tmax == null || temp > monthlyTotals[monthStr].tmax) {
+        monthlyTotals[monthStr].tmax = temp;
       }
-      if (presHpa != null) {
-        d.pSum += presHpa;
-        d.pCount += 1;
+      if (monthlyTotals[monthStr].tmin == null || temp < monthlyTotals[monthStr].tmin) {
+        monthlyTotals[monthStr].tmin = temp;
       }
     }
-  });
+  }
+});
 
   // Przelicz średnie ciśnienie dzienne
   Object.keys(dailyLast7).forEach(d => {
@@ -2430,7 +2458,7 @@ function renderRainLast7Chart(dailyLast7ForChart) {
 
 function renderRainMonthlyChart(monthlyTotals) {
   const labels = Object.keys(monthlyTotals).sort();
-  const values = labels.map(m => monthlyTotals[m] || 0);
+  const values = labels.map(m => monthlyTotals[m]?.mm ?? 0);
   rainMonthlyChart = renderBarChart(
     'rainMonthlyChart',
     rainMonthlyChart,
