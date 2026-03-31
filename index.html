@@ -2721,21 +2721,28 @@ async function loadMachineServices(machineId){
 }
   
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
+
 async function loadRainData() {
   console.log('loadRainData start');
 
+  const now = new Date();
+  const daysBack = 60; // ile dni wstecz pobiera z bazy
+
+  // data początkowa (UTC ISO) – tak jak wcześniej
+  const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  const fromIso = fromDate.toISOString(); // np. 2026-02-01T...
+
   const { data, error } = await supabaseClient
-  .from('rainmeasurements')
-  .select('created_at, amount_mm, temperature_c, pressure_pa')
-  .gte('created_at', fromIso)
-  .order('created_at', { ascending: true });
+    .from('rainmeasurements')
+    .select('created_at, amount_mm, temperature_c, pressure_pa')
+    .gte('created_at', fromIso)
+    .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Błąd ładowania opadów', error);
+    console.error('Błąd ładowania opadów:', error);
     return;
   }
 
-  console.log('Rain rows:', data);
   renderRainTables(data || []);
 }
   
