@@ -823,6 +823,7 @@ button.primary:hover{background:#15803d}
         <tr>
           <th>Godzina</th>
           <th>Opad [l/m²]</th>
+          <th>T [°C] / p [hPa]</th>
         </tr>
       </thead>
       <tbody id="rainTodayTableBody"></tbody>
@@ -2073,8 +2074,11 @@ function renderRainTables(rows) {
   const todayDay   = String(todayLocal.getDate()).padStart(2, '0');
   const todayStr   = `${todayYear}-${todayMonth}-${todayDay}`;
 
+  // Dzisiejsze: godzina -> { mm, temp, pressure }
   const hourlyToday = {};
+  // 7 dni: data -> { mm, tmax, tmin, pSum, pCount }
   const dailyLast7 = {};
+  // Miesięczne: miesiąc -> mm
   const monthlyTotals = {};
 
   const msInDay = 24 * 60 * 60 * 1000;
@@ -2093,6 +2097,10 @@ function renderRainTables(rows) {
     }
     const mm = mmRaw;
 
+    const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
+    const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
+    const presHpa = presPa != null ? presPa / 100.0 : null; // BMP280 daje Pa
+
     // data YYYY-MM-DD w czasie PL
     const year  = tsLocal.getFullYear();
     const month = String(tsLocal.getMonth() + 1).padStart(2, '0');
@@ -2106,20 +2114,52 @@ function renderRainTables(rows) {
     // miesiąc YYYY-MM w czasie PL
     const monthStr = `${year}-${month}`;
 
-    // dzisiejsze – nadpisujemy ostatnią wartością
+    // Dzisiejsze – ostatni pomiar w danej godzinie, z temp i ciśnieniem
     if (dateStr === todayStr) {
-      hourlyToday[hourStr] = mm;
+      if (!hourlyToday[hourStr]) {
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+      }
+      hourlyToday[hourStr].mm = mm;
+      if (temp != null) hourlyToday[hourStr].temp = temp;
+      if (presHpa != null) hourlyToday[hourStr].pressure = presHpa;
     }
 
-    // ostatnie 7 dni – suma
+    // Ostatnie 7 dni – suma opadów + T max/min + średnie ciśnienie
     if (tsLocal >= sevenDaysAgo && tsLocal <= todayLocal) {
-      if (!dailyLast7[dateStr]) dailyLast7[dateStr] = 0;
-      dailyLast7[dateStr] += mm;
+      if (!dailyLast7[dateStr]) {
+        dailyLast7[dateStr] = {
+          mm: 0,
+          tmax: temp,
+          tmin: temp,
+          pSum: presHpa != null ? presHpa : 0,
+          pCount: presHpa != null ? 1 : 0
+        };
+      }
+      const d = dailyLast7[dateStr];
+      d.mm += mm;
+
+      if (temp != null) {
+        if (d.tmax == null || temp > d.tmax) d.tmax = temp;
+        if (d.tmin == null || temp < d.tmin) d.tmin = temp;
+      }
+      if (presHpa != null) {
+        d.pSum += presHpa;
+        d.pCount += 1;
+      }
     }
 
-    // miesięczne – suma
+    // Miesięczne – suma opadów
     if (!monthlyTotals[monthStr]) monthlyTotals[monthStr] = 0;
     monthlyTotals[monthStr] += mm;
+  });
+
+  // Przelicz średnie ciśnienie dzienne
+  Object.keys(dailyLast7).forEach(d => {
+    const entry = dailyLast7[d];
+    entry.pressure =
+      entry.pCount > 0 ? entry.pSum / entry.pCount : null;
+    delete entry.pSum;
+    delete entry.pCount;
   });
 
   console.log('hourlyToday:', hourlyToday);
@@ -2130,10 +2170,18 @@ function renderRainTables(rows) {
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
 
+  // wykresy: dziś i miesiąc bez zmian
   renderRainTodayChart(hourlyToday);
-  renderRainLast7Chart(dailyLast7);
   renderRainMonthlyChart(monthlyTotals);
+
+  // wykres 7 dni – używamy tylko sum opadów
+  const dailyLast7ForChart = Object.fromEntries(
+    Object.entries(dailyLast7).map(([d, v]) => [d, v.mm])
+  );
+  renderRainLast7Chart(dailyLast7ForChart);
 }
+
+// Dzisiejsze opady: godzina + opad + T/ciśnienie
 
 function renderRainToday(hourlyToday) {
   const tbody = document.getElementById('rainTodayTableBody');
@@ -2142,11 +2190,12 @@ function renderRainToday(hourlyToday) {
 
   tbody.innerHTML = '';
 
-  const hours = Object.keys(hourlyToday).sort(); // 01:00, 03:00, ...
+  const hours = Object.keys(hourlyToday).sort();
   let total = 0;
 
   hours.forEach(h => {
-    const mm = hourlyToday[h];
+    const entry = hourlyToday[h];
+    const mm = entry.mm;
     total += mm;
 
     const tr = document.createElement('tr');
@@ -2157,13 +2206,24 @@ function renderRainToday(hourlyToday) {
     const tdMm = document.createElement('td');
     tdMm.textContent = mm.toFixed(2);
 
+    const tdInfo = document.createElement('td');
+    const t = entry.temp;
+    const p = entry.pressure;
+    let txt = '';
+    if (t != null) txt += `${t.toFixed(1)} °C`;
+    if (p != null) txt += (txt ? ', ' : '') + `${p.toFixed(0)} hPa`;
+    tdInfo.textContent = txt || '-';
+
     tr.appendChild(tdHour);
     tr.appendChild(tdMm);
+    tr.appendChild(tdInfo);
     tbody.appendChild(tr);
   });
 
   totalSpan.textContent = total.toFixed(2);
 }
+
+// Ostatnie 7 dni: Data, opad, T max/min, ciśnienie
 
 function renderRainLast7(dailyLast7) {
   const tbody = document.getElementById('rain7daysTableBody');
@@ -2171,10 +2231,14 @@ function renderRainLast7(dailyLast7) {
 
   tbody.innerHTML = '';
 
-  const days = Object.keys(dailyLast7).sort(); // rosnąco po dacie
+  const days = Object.keys(dailyLast7).sort();
 
   days.forEach(d => {
-    const mm = dailyLast7[d];
+    const entry = dailyLast7[d];
+    const mm = entry.mm;
+    const tmax = entry.tmax;
+    const tmin = entry.tmin;
+    const p = entry.pressure;
 
     const tr = document.createElement('tr');
 
@@ -2184,11 +2248,25 @@ function renderRainLast7(dailyLast7) {
     const tdMm = document.createElement('td');
     tdMm.textContent = mm.toFixed(2);
 
+    const tdTmax = document.createElement('td');
+    tdTmax.textContent = tmax != null ? tmax.toFixed(1) : '-';
+
+    const tdTmin = document.createElement('td');
+    tdTmin.textContent = tmin != null ? tmin.toFixed(1) : '-';
+
+    const tdP = document.createElement('td');
+    tdP.textContent = p != null ? p.toFixed(0) : '-';
+
     tr.appendChild(tdDate);
     tr.appendChild(tdMm);
+    tr.appendChild(tdTmax);
+    tr.appendChild(tdTmin);
+    tr.appendChild(tdP);
     tbody.appendChild(tr);
   });
 }
+
+// Opady miesięczne – bez zmian (tylko suma mm)
 
 function renderRainMonthly(monthlyTotals) {
   const tbody = document.getElementById('rainMonthlyTableBody');
@@ -2196,7 +2274,7 @@ function renderRainMonthly(monthlyTotals) {
 
   tbody.innerHTML = '';
 
-  const months = Object.keys(monthlyTotals).sort(); // YYYY-MM
+  const months = Object.keys(monthlyTotals).sort();
 
   months.forEach(m => {
     const mm = monthlyTotals[m];
@@ -2214,82 +2292,7 @@ function renderRainMonthly(monthlyTotals) {
     tbody.appendChild(tr);
   });
 }
-
-// PROSTE WYKRESY OPADÓW (Chart.js)
-
-let rainTodayChart = null;
-let rain7daysChart = null;
-let rainMonthlyChart = null;
-
-function renderBarChart(canvasId, chartRef, labels, values, labelText) {
-  const ctx = document.getElementById(canvasId);
-  if (!ctx) return;
-
-  if (chartRef && typeof chartRef.destroy === 'function') {
-    chartRef.destroy();
-  }
-
-  const newChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: labelText,
-        data: values,
-        backgroundColor: '#22c55e'
-      }]
-    },
-    options: {
-      scales: {
-        x: { ticks: { autoSkip: false } },
-        y: { beginAtZero: true }
-      },
-      plugins: {
-        legend: { display: false }
-      }
-    }
-  });
-
-  return newChart;
-}
-
-function renderRainTodayChart(hourlyToday) {
-  const labels = Object.keys(hourlyToday).sort();
-  const values = labels.map(h => hourlyToday[h] || 0);
-  rainTodayChart = renderBarChart(
-    'rainTodayChart',
-    rainTodayChart,
-    labels,
-    values,
-    'Opad [l/m²]'
-  );
-}
-
-function renderRainLast7Chart(dailyLast7) {
-  const labels = Object.keys(dailyLast7).sort();
-  const values = labels.map(d => dailyLast7[d] || 0);
-  rain7daysChart = renderBarChart(
-    'rain7daysChart',
-    rain7daysChart,
-    labels,
-    values,
-    'Opad [l/m²]'
-  );
-}
-
-function renderRainMonthlyChart(monthlyTotals) {
-  const labels = Object.keys(monthlyTotals).sort();
-  const values = labels.map(m => monthlyTotals[m] || 0);
-  rainMonthlyChart = renderBarChart(
-    'rainMonthlyChart',
-    rainMonthlyChart,
-    labels,
-    values,
-    'Opad [l/m²]'
-  );
-}
-
-/* MAGAZYN */
+  
 async function ensureFuelRow(){
   const { data, error } = await supabaseClient
     .from('warehouse_items')
@@ -2722,9 +2725,10 @@ async function loadRainData() {
   console.log('loadRainData start');
 
   const { data, error } = await supabaseClient
-    .from('rainmeasurements')
-    .select('created_at, amount_mm')
-    .order('created_at', { ascending: true });
+  .from('rainmeasurements')
+  .select('created_at, amount_mm, temperature_c, pressure_pa')
+  .gte('created_at', fromIso)
+  .order('created_at', { ascending: true });
 
   if (error) {
     console.error('Błąd ładowania opadów', error);
