@@ -2200,32 +2200,6 @@ function renderRainMonthly(monthlyTotals) {
   });
 }
 
-  const ctx = document.getElementById('rainMonthlyChart');
-  if (!ctx) return;
-
-  if (rainMonthlyChart) rainMonthlyChart.destroy();
-  rainMonthlyChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Opad [l/m²]',
-        data: values,
-        backgroundColor: '#22c55e'
-      }]
-    },
-    options: {
-      scales: {
-        x: { ticks: { autoSkip: false } },
-        y: { beginAtZero: true }
-      },
-      plugins: {
-        legend: { display: false }
-      }
-    }
-  });
-}
-  
 /* MAGAZYN */
 
 async function ensureFuelRow(){
