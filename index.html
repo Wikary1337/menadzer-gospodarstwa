@@ -903,8 +903,8 @@ button.primary:hover{background:#15803d}
 const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  
-  async function loginUser() {
+
+async function loginUser() {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
 
@@ -923,11 +923,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     return;
   }
 
+  // po zalogowaniu odśwież stronę, żeby checkAuth() odpalił init aplikacji
   location.reload();
-}
-
-  document.getElementById('loginSection').style.display = 'none';
-  document.getElementById('appSection').style.display = 'block';
 }
 
 async function logoutUser() {
