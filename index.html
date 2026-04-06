@@ -436,37 +436,9 @@ button.primary:hover{background:#15803d}
 </head>
 
 <body>
- <div class="container">
-
-  <div id="loginSection" style="display:none; max-width:460px; margin:40px auto;">
-    <h2>Logowanie</h2>
-    <div class="app-subtitle">Zaloguj się, aby otworzyć panel gospodarstwa</div>
-
-    <div class="form-row">
-      <label style="flex:1;">
-        Email<br>
-        <input id="loginEmail" type="email" placeholder="email" style="width:100%;">
-      </label>
-    </div>
-
-    <div class="form-row">
-      <label style="flex:1;">
-        Hasło<br>
-        <input id="loginPassword" type="password" placeholder="hasło" style="width:100%;">
-      </label>
-    </div>
-
-    <button class="primary" onclick="loginUser()">Zaloguj</button>
-  </div>
-
-  <div id="appSection" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
-      <div>
-        <h1>Gospodarstwo Rolne Kaczmarek</h1>
-        <div class="app-subtitle">Panel zarządzania polami, zabiegami, magazynem i maszynami</div>
-      </div>
-      <button class="primary" onclick="logoutUser()">Wyloguj</button>
-    </div>
+<div class="container">
+  <h1>Gospodarstwo Rolne Kaczmarek</h1>
+  <div class="app-subtitle">Panel zarządzania polami, zabiegami, magazynem i maszynami</div>
 
   <div class="tabs">
     <button class="active" onclick="showTab('start')">Start</button>
@@ -892,9 +864,7 @@ button.primary:hover{background:#15803d}
     </div>
   </div>
 </div>
-    
-  </div> 
-   
+  
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.js"></script>
@@ -903,52 +873,6 @@ button.primary:hover{background:#15803d}
 const SUPABASE_URL = "https://vnuwnfyjjddjpydnvanb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudXduZnlqamRkanB5ZG52YW5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQzMzcsImV4cCI6MjA5MDA0MDMzN30.PlTWEz-HLbzcAJP1aNC4jCNCzrwuTXbeQ-4uMANdWuk";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function loginUser() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-
-  if (!email || !password) {
-    alert('Podaj email i hasło');
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    alert('Błąd logowania: ' + error.message);
-    return;
-  }
-
-  // po zalogowaniu odśwież stronę, żeby checkAuth() odpalił init aplikacji
-  location.reload();
-}
-
-async function logoutUser() {
-  await supabaseClient.auth.signOut();
-  location.reload();
-}
-
-async function checkAuth() {
-  const { data, error } = await supabaseClient.auth.getSession();
-
-  if (error) {
-    console.log('checkAuth error:', error);
-  }
-
-  if (data && data.session) {
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('appSection').style.display = 'block';
-    return true;
-  } else {
-    document.getElementById('loginSection').style.display = 'block';
-    document.getElementById('appSection').style.display = 'none';
-    return false;
-  }
-}
 
 let map, drawnItems, currentPolygonGeoJSON = null;
 let fieldLayers = {};
@@ -3095,11 +3019,9 @@ async function loadSeasonSummary(){
   });
 }
 
-// INIT
-document.addEventListener('DOMContentLoaded', async () => {
-  const isLoggedIn = await checkAuth();
-  if (!isLoggedIn) return;
+/* INIT */
 
+document.addEventListener('DOMContentLoaded', async () => {
   initMap();
   await ensureFuelRow();
   await loadCrops();
@@ -3109,12 +3031,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadWarehouseForTreatments();
   await loadTreatmentsList();
   await loadMachines();
-  await updateStartMetrics();
-  await loadRainData();      // <-- ważne, ładuje tabelki i wykresy opadów
+  await loadSeasonSummary();
   await loadStartWeather();
-
+  await loadRainData();      // ← DODAJ TO
   updateStartClock();
   setInterval(updateStartClock, 60000);
+  await updateStartMetrics();
 });
 </script>
 </body>
