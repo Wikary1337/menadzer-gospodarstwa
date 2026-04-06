@@ -3095,23 +3095,24 @@ async function loadSeasonSummary(){
   });
 }
 
-/* INIT */
-
+// INIT
 document.addEventListener('DOMContentLoaded', async () => {
   const isLoggedIn = await checkAuth();
   if (!isLoggedIn) return;
 
   initMap();
+  await ensureFuelRow();
   await loadCrops();
   await loadFields();
   await loadTreatmentFields();
+  await loadWarehouseTables();
   await loadWarehouseForTreatments();
   await loadTreatmentsList();
-  await loadWarehouseTables();
   await loadMachines();
   await updateStartMetrics();
-  await loadRainData();
-  loadStartWeather();
+  await loadRainData();      // <-- ważne, ładuje tabelki i wykresy opadów
+  await loadStartWeather();
+
   updateStartClock();
   setInterval(updateStartClock, 60000);
 });
