@@ -811,7 +811,7 @@ button.primary:hover{background:#15803d}
   </div>
 
 <!-- OPADY -->
-<div id="rain" class="section">
+<div id="rainSection" style="display:none; padding:10px;">
   <h2>Opady</h2>
 
   <h3>Dzisiejsze opady</h3>
@@ -2074,9 +2074,9 @@ async function loadRainData() {
   const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
   const fromIso = fromDate.toISOString();
 
-  const { data: rows, error } = await supabaseClient
-    .from('rainmeasurements')
-    .select('created_at, amount_mm, temperature_c, pressure_pa')
+const { data, error } = await supabaseClient
+  .from('rainmeasurements')
+  .select('created_at, amount_mm, temperature_c, pressure_pa')
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
