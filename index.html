@@ -2913,34 +2913,291 @@ async function loadRainData() {
   console.log('loadRainData start');
 
   const now = new Date();
-  const daysBack = 60; // ile dni wstecz pobiera z bazy
-
-  // data początkowa (UTC ISO) – tak jak wcześniej
+  const daysBack = 60;
   const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-  const fromIso = fromDate.toISOString(); // np. 2026-02-01T...
+  const fromIso = fromDate.toISOString();
 
-  const { data, error } = await supabaseClient
+  const { data: rainRows, error: rainErr } = await supabaseClient
     .from('rainmeasurements')
     .select('created_at, amount_mm, temperature_c, pressure_pa')
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
-  if (error) {
-    console.error('Błąd ładowania opadów:', error);
+  console.log('rainRows =', rainRows);
+  console.log('rainErr =', rainErr);
+
+  if (rainErr) {
+    console.error('Błąd ładowania opadów:', rainErr);
     return;
   }
 
-const { data: weatherRows, error: wErr } = await supabaseClient
-  .from('weather_measurements')
-  .select('created_at, temperature_c, pressure_pa')
-  .gte('created_at', fromIso)
-  .order('created_at', { ascending: true });
-
-if (wErr) {
-  console.error('Błąd ładowania pogody:', wErr);
+  renderRainTables(rainRows || []);
 }
 
-renderRainTables(data || [], weatherRows || []);
+function toWarsawParts(dateValue) {
+  const d = new Date(dateValue);
+
+  const parts = new Intl.DateTimeFormat('pl-PL', {
+    timeZone: 'Europe/Warsaw',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false
+  }).formatToParts(d);
+
+  const get = type => parts.find(p => p.type === type)?.value || '';
+
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  const hour = get('hour');
+
+  return {
+    dateStr: `${year}-${month}-${day}`,
+    hourStr: `${hour}:00`,
+    monthStr: `${year}-${month}`
+  };
+}
+
+function renderRainTables(rows) {
+  const todayParts = toWarsawParts(new Date());
+  const todayStr = todayParts.dateStr;
+
+  const sevenDayKeys = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    sevenDayKeys.push(toWarsawParts(d).dateStr);
+  }
+
+  const sevenDaySet = new Set(sevenDayKeys);
+
+  const hourlyToday = {};
+  const dailyLast7 = {};
+  const monthlyTotals = {};
+
+  rows.forEach(row => {
+    const { dateStr, hourStr, monthStr } = toWarsawParts(row.created_at);
+
+    const mm = Number(row.amount_mm || 0);
+    const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
+    const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
+    const presHpa = presPa != null ? presPa / 100 : null;
+
+    if (!isFinite(mm) || mm < 0 || mm > 50) return;
+
+    if (dateStr === todayStr) {
+      if (!hourlyToday[hourStr]) {
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+      }
+      hourlyToday[hourStr].mm += mm;
+
+      if (temp != null && isFinite(temp)) {
+        hourlyToday[hourStr].temp = temp;
+      }
+      if (presHpa != null && isFinite(presHpa)) {
+        hourlyToday[hourStr].pressure = presHpa;
+      }
+    }
+
+    if (sevenDaySet.has(dateStr)) {
+      if (!dailyLast7[dateStr]) {
+        dailyLast7[dateStr] = {
+          mm: 0,
+          tmax: null,
+          tmin: null,
+          pSum: 0,
+          pCount: 0
+        };
+      }
+
+      const d = dailyLast7[dateStr];
+      d.mm += mm;
+
+      if (temp != null && isFinite(temp)) {
+        if (d.tmax == null || temp > d.tmax) d.tmax = temp;
+        if (d.tmin == null || temp < d.tmin) d.tmin = temp;
+      }
+
+      if (presHpa != null && isFinite(presHpa)) {
+        d.pSum += presHpa;
+        d.pCount += 1;
+      }
+    }
+
+    if (!monthlyTotals[monthStr]) {
+      monthlyTotals[monthStr] = {
+        mm: 0,
+        tmax: null,
+        tmin: null
+      };
+    }
+
+    monthlyTotals[monthStr].mm += mm;
+
+    if (temp != null && isFinite(temp)) {
+      if (monthlyTotals[monthStr].tmax == null || temp > monthlyTotals[monthStr].tmax) {
+        monthlyTotals[monthStr].tmax = temp;
+      }
+      if (monthlyTotals[monthStr].tmin == null || temp < monthlyTotals[monthStr].tmin) {
+        monthlyTotals[monthStr].tmin = temp;
+      }
+    }
+  });
+
+  sevenDayKeys.forEach(dateStr => {
+    if (!dailyLast7[dateStr]) {
+      dailyLast7[dateStr] = {
+        mm: 0,
+        tmax: null,
+        tmin: null,
+        pSum: 0,
+        pCount: 0
+      };
+    }
+  });
+
+  Object.keys(dailyLast7).forEach(d => {
+    const entry = dailyLast7[d];
+    entry.pressure = entry.pCount > 0 ? entry.pSum / entry.pCount : null;
+    delete entry.pSum;
+    delete entry.pCount;
+  });
+
+  console.log('hourlyToday:', hourlyToday);
+  console.log('dailyLast7:', dailyLast7);
+  console.log('monthlyTotals:', monthlyTotals);
+
+  renderRainToday(hourlyToday);
+  renderRainLast7(dailyLast7);
+  renderRainMonthly(monthlyTotals);
+
+  renderRainTodayChart(hourlyToday);
+  renderRainMonthlyChart(monthlyTotals);
+
+  const dailyLast7ForChart = Object.fromEntries(
+    Object.entries(dailyLast7).map(([d, v]) => [d, v.mm || 0])
+  );
+  renderRainLast7Chart(dailyLast7ForChart);
+}
+
+function renderRainToday(hourlyToday) {
+  const tbody = document.getElementById('rainTodayTableBody');
+  const totalSpan = document.getElementById('rainTodayTotal');
+  if (!tbody || !totalSpan) return;
+
+  tbody.innerHTML = '';
+
+  const hours = Object.keys(hourlyToday).sort();
+  let total = 0;
+
+  hours.forEach(h => {
+    const entry = hourlyToday[h];
+    const mm = Number(entry.mm || 0);
+    total += mm;
+
+    const tr = document.createElement('tr');
+
+    const tdHour = document.createElement('td');
+    tdHour.textContent = h;
+
+    const tdMm = document.createElement('td');
+    tdMm.textContent = mm.toFixed(2);
+
+    const tdInfo = document.createElement('td');
+    const t = entry.temp;
+    const p = entry.pressure;
+
+    let txt = '';
+    if (t != null && isFinite(t)) txt += `${t.toFixed(1)} °C`;
+    if (p != null && isFinite(p)) txt += (txt ? ', ' : '') + `${p.toFixed(0)} hPa`;
+    tdInfo.textContent = txt || '-';
+
+    tr.appendChild(tdHour);
+    tr.appendChild(tdMm);
+    tr.appendChild(tdInfo);
+    tbody.appendChild(tr);
+  });
+
+  totalSpan.textContent = total.toFixed(2);
+}
+
+function renderRainLast7(dailyLast7) {
+  const tbody = document.getElementById('rain7daysTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  const days = Object.keys(dailyLast7).sort();
+
+  days.forEach(d => {
+    const entry = dailyLast7[d];
+    const mm = Number(entry.mm || 0);
+    const tmax = entry.tmax;
+    const tmin = entry.tmin;
+    const p = entry.pressure;
+
+    const tr = document.createElement('tr');
+
+    const tdDate = document.createElement('td');
+    tdDate.textContent = d;
+
+    const tdMm = document.createElement('td');
+    tdMm.textContent = mm.toFixed(2);
+
+    const tdTmax = document.createElement('td');
+    tdTmax.textContent = tmax != null && isFinite(tmax) ? tmax.toFixed(1) : '-';
+
+    const tdTmin = document.createElement('td');
+    tdTmin.textContent = tmin != null && isFinite(tmin) ? tmin.toFixed(1) : '-';
+
+    const tdP = document.createElement('td');
+    tdP.textContent = p != null && isFinite(p) ? p.toFixed(0) : '-';
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdMm);
+    tr.appendChild(tdTmax);
+    tr.appendChild(tdTmin);
+    tr.appendChild(tdP);
+    tbody.appendChild(tr);
+  });
+}
+
+function renderRainMonthly(monthlyTotals) {
+  const tbody = document.getElementById('rainMonthlyTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  const months = Object.keys(monthlyTotals).sort();
+
+  months.forEach(m => {
+    const entry = monthlyTotals[m];
+    const mm = Number(entry.mm || 0);
+    const tmax = entry.tmax;
+    const tmin = entry.tmin;
+
+    const tr = document.createElement('tr');
+
+    const tdMonth = document.createElement('td');
+    tdMonth.textContent = m;
+
+    const tdMm = document.createElement('td');
+    tdMm.textContent = mm.toFixed(2);
+
+    const tdTmax = document.createElement('td');
+    tdTmax.textContent = tmax != null && isFinite(tmax) ? tmax.toFixed(1) : '-';
+
+    const tdTmin = document.createElement('td');
+    tdTmin.textContent = tmin != null && isFinite(tmin) ? tmin.toFixed(1) : '-';
+
+    tr.appendChild(tdMonth);
+    tr.appendChild(tdMm);
+    tr.appendChild(tdTmax);
+    tr.appendChild(tdTmin);
+    tbody.appendChild(tr);
+  });
 }
   
 /* SEZONY */
