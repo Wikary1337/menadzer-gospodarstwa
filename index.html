@@ -2067,64 +2067,43 @@ document.addEventListener('change', e=>{
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
 
 async function loadRainData() {
-  const tbody = document.getElementById('rainTodayTableBody');
-  const totalSpan = document.getElementById('rainTodayTotal');
+  console.log('loadRainData start');
 
-  if (tbody) tbody.innerHTML = '';
-  if (totalSpan) totalSpan.textContent = 'test';
+  const now = new Date();
+  const daysBack = 60;
+  const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+  const fromIso = fromDate.toISOString();
 
-  const { data, error } = await supabaseClient
+  const { data: rainRows, error: rainErr } = await supabaseClient
+    .from('rainmeasurements')
+    .select('created_at, amount_mm')
+    .gte('created_at', fromIso)
+    .order('created_at', { ascending: true });
+
+  console.log('rainRows =', rainRows);
+  console.log('rainErr =', rainErr);
+
+  if (rainErr) {
+    console.error('Błąd ładowania opadów:', rainErr);
+    return;
+  }
+
+  const { data: weatherRows, error: wErr } = await supabaseClient
     .from('weather_measurements')
-    .select('created_at, temperature_c, pressure_pa, device_id')
-    .order('created_at', { ascending: false })
-    .limit(10);
+    .select('created_at, temperature_c, pressure_pa')
+    .gte('created_at', fromIso)
+    .order('created_at', { ascending: true });
 
-  console.log('weather_measurements data =', data);
-  console.log('weather_measurements error =', error);
+  console.log('weatherRows =', weatherRows);
+  console.log('wErr =', wErr);
 
-  if (error) {
-    if (tbody) {
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 3;
-      td.textContent = 'Błąd: ' + error.message;
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-    }
-    return;
+  if (wErr) {
+    console.error('Błąd ładowania pogody:', wErr);
   }
 
-  if (!data || data.length === 0) {
-    if (tbody) {
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 3;
-      td.textContent = 'Brak danych z weather_measurements';
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-    }
-    return;
-  }
-
-  data.forEach(row => {
-    const tr = document.createElement('tr');
-
-    const td1 = document.createElement('td');
-    td1.textContent = new Date(row.created_at).toLocaleString('pl-PL');
-
-    const td2 = document.createElement('td');
-    td2.textContent = row.temperature_c != null ? Number(row.temperature_c).toFixed(2) + ' °C' : '-';
-
-    const td3 = document.createElement('td');
-    td3.textContent = row.pressure_pa != null ? (Number(row.pressure_pa) / 100).toFixed(1) + ' hPa' : '-';
-
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    tr.appendChild(td3);
-    tbody.appendChild(tr);
-  });
+  renderRainTables(rainRows || [], weatherRows || []);
 }
-
+  
 function toWarsawParts(dateValue) {
   const d = new Date(dateValue);
 
