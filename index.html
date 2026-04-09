@@ -818,7 +818,8 @@ button.primary:hover{background:#15803d}
   <p>
     Razem: <span id="rainTodayTotal">0.0</span> l/m²
   </p>
-  <table class="table small">
+  <canvas id="rainTodayChart" style="max-height:200px;"></canvas>
+  <table class="table small" style="margin-top:8px;">
     <thead>
       <tr>
         <th>Godzina</th>
@@ -832,7 +833,7 @@ button.primary:hover{background:#15803d}
   <div class="columns" style="margin-top:16px;">
     <div class="col">
       <h3>Ostatnie 7 dni</h3>
-      <canvas id="rain7daysChart"></canvas>
+      <canvas id="rain7daysChart" style="max-height:220px;"></canvas>
       <table class="table small" style="margin-top:8px;">
         <thead>
           <tr>
@@ -849,14 +850,14 @@ button.primary:hover{background:#15803d}
 
     <div class="col">
       <h3>Opady miesięczne</h3>
-      <canvas id="rainMonthlyChart"></canvas>
+      <canvas id="rainMonthlyChart" style="max-height:220px;"></canvas>
       <table class="table small" style="margin-top:8px;">
         <thead>
           <tr>
-           <th>Miesiąc</th>
-    <th>Opad [l/m²]</th>
-    <th>T max [°C]</th>
-    <th>T min [°C]</th>
+            <th>Miesiąc</th>
+            <th>Opad [l/m²]</th>
+            <th>T max [°C]</th>
+            <th>T min [°C]</th>
           </tr>
         </thead>
         <tbody id="rainMonthlyTableBody"></tbody>
@@ -2074,9 +2075,9 @@ async function loadRainData() {
   const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
   const fromIso = fromDate.toISOString();
 
-const { data, error } = await supabaseClient
-  .from('rainmeasurements')
-  .select('created_at, amount_mm, temperature_c, pressure_pa')
+  const { data: rows, error } = await supabaseClient
+    .from('rainmeasurements')
+    .select('created_at, amount_mm, temperature_c, pressure_pa')
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
@@ -2085,7 +2086,7 @@ const { data, error } = await supabaseClient
     return;
   }
 
-  console.log('rain rows:', rows);
+  console.log('rainRows =', rows);
   renderRainTables(rows || []);
 }
 
@@ -2098,7 +2099,7 @@ function renderRainTables(rows) {
   const monthlyTotals = {};
 
   const msInDay = 24 * 60 * 60 * 1000;
-  const sevenDaysAgo = new Date(today.getTime() - 6 * msInDay);
+  const sevenDaysAgo = new Date(today.getTime() - 6 * msInDay); // 7 dni łącznie
 
   rows.forEach(row => {
     const ts = new Date(row.created_at);
@@ -2108,26 +2109,26 @@ function renderRainTables(rows) {
     const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
     const presHpa = presPa != null ? presPa / 100 : null;
 
-    const dateStr = ts.toISOString().slice(0, 10);
-    const hourStr = ts.toISOString().slice(11, 13) + ':00';
-    const monthStr = ts.toISOString().slice(0, 7);
+    const dateStr = ts.toISOString().slice(0, 10);         // YYYY-MM-DD
+    const hourStr = ts.toISOString().slice(11, 13) + ':00';// HH:00
+    const monthStr = ts.toISOString().slice(0, 7);         // YYYY-MM
 
+    // prosta walidacja
     if (!isFinite(mm) || mm < 0 || mm > 50) return;
-
     const validTemp = temp != null && isFinite(temp) && temp >= -40 && temp <= 60;
     const validPres = presPa != null && isFinite(presPa) && presPa >= 85000 && presPa <= 110000;
 
+    // DZIŚ – agregacja godzinowa
     if (dateStr === todayStr) {
       if (!hourlyToday[hourStr]) {
         hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
       }
-
       hourlyToday[hourStr].mm += mm;
-
       if (validTemp) hourlyToday[hourStr].temp = temp;
       if (validPres) hourlyToday[hourStr].pressure = presHpa;
     }
 
+    // OSTATNIE 7 DNI – agregacja dobowa
     if (ts >= sevenDaysAgo && ts <= today) {
       if (!dailyLast7[dateStr]) {
         dailyLast7[dateStr] = {
@@ -2139,23 +2140,21 @@ function renderRainTables(rows) {
         };
       }
 
-      dailyLast7[dateStr].mm += mm;
+      const d = dailyLast7[dateStr];
+      d.mm += mm;
 
       if (validTemp) {
-        if (dailyLast7[dateStr].tmax == null || temp > dailyLast7[dateStr].tmax) {
-          dailyLast7[dateStr].tmax = temp;
-        }
-        if (dailyLast7[dateStr].tmin == null || temp < dailyLast7[dateStr].tmin) {
-          dailyLast7[dateStr].tmin = temp;
-        }
+        if (d.tmax == null || temp > d.tmax) d.tmax = temp;
+        if (d.tmin == null || temp < d.tmin) d.tmin = temp;
       }
 
       if (validPres) {
-        dailyLast7[dateStr].pSum += presHpa;
-        dailyLast7[dateStr].pCount += 1;
+        d.pSum += presHpa;
+        d.pCount += 1;
       }
     }
 
+    // MIESIĘCZNIE
     if (!monthlyTotals[monthStr]) {
       monthlyTotals[monthStr] = {
         mm: 0,
@@ -2163,7 +2162,6 @@ function renderRainTables(rows) {
         tmin: null
       };
     }
-
     monthlyTotals[monthStr].mm += mm;
 
     if (validTemp) {
@@ -2176,6 +2174,7 @@ function renderRainTables(rows) {
     }
   });
 
+  // średnie ciśnienie na dobę
   Object.keys(dailyLast7).forEach(dateStr => {
     const d = dailyLast7[dateStr];
     d.pressure = d.pCount > 0 ? d.pSum / d.pCount : null;
@@ -2266,7 +2265,9 @@ function renderRainLast7(dailyLast7) {
     tdTmin.textContent = entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-';
 
     const tdP = document.createElement('td');
-    tdP.textContent = entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-';
+    tdP.textContent = entry.pressure != null && isFinite(entry.pressure)
+      ? entry.pressure.toFixed(0)
+      : '-';
 
     tr.appendChild(tdDate);
     tr.appendChild(tdMm);
@@ -2309,7 +2310,7 @@ function renderRainMonthly(monthlyTotals) {
     tbody.appendChild(tr);
   });
 }
-  
+
 // PROSTE WYKRESY OPADÓW (Chart.js)
 
 let rainTodayChart = null;
@@ -2383,7 +2384,7 @@ function renderRainMonthlyChart(monthlyTotals) {
     'Opad [l/m²]'
   );
 }
-
+  
 /* MAGAZYN */
   
 async function ensureFuelRow(){
