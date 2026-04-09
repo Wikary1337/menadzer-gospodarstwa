@@ -2090,9 +2090,6 @@ async function loadRainData() {
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
-  console.log('rainRows raw:', rainRows);
-  console.log('rainErr:', rainErr);
-
   if (rainErr) {
     console.error('Błąd ładowania opadów:', rainErr);
     return;
@@ -2103,9 +2100,6 @@ async function loadRainData() {
     .select('created_at, temperature_c, pressure_pa')
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
-
-  console.log('weatherRows:', weatherRows);
-  console.log('weatherErr:', weatherErr);
 
   if (weatherErr) {
     console.error('Błąd ładowania pogody:', weatherErr);
@@ -2132,36 +2126,43 @@ function getRainAmount(row) {
   return 0;
 }
 
-function toLocalDateKey(dateValue) {
+function toWarsawParts(dateValue) {
   const d = new Date(dateValue);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
 
-function toLocalHourKey(dateValue) {
-  const d = new Date(dateValue);
-  return `${String(d.getHours()).padStart(2, '0')}:00`;
-}
+  const parts = new Intl.DateTimeFormat('pl-PL', {
+    timeZone: 'Europe/Warsaw',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false
+  }).formatToParts(d);
 
-function toLocalMonthKey(dateValue) {
-  const d = new Date(dateValue);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
+  const get = type => parts.find(p => p.type === type)?.value || '';
+
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  const hour = get('hour');
+
+  return {
+    dateStr: `${year}-${month}-${day}`,
+    hourStr: `${hour}:00`,
+    monthStr: `${year}-${month}`,
+    timestamp: d.getTime()
+  };
 }
 
 function renderRainTables(rainRows, weatherRows) {
-  const now = new Date();
-  const todayStr = toLocalDateKey(now);
-  const currentMonthStr = toLocalMonthKey(now);
+  const nowParts = toWarsawParts(new Date());
+  const todayStr = nowParts.dateStr;
+  const currentMonthStr = nowParts.monthStr;
 
   const sevenDayKeys = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    sevenDayKeys.push(toLocalDateKey(d));
+    sevenDayKeys.push(toWarsawParts(d).dateStr);
   }
   const sevenDaySet = new Set(sevenDayKeys);
 
@@ -2171,27 +2172,24 @@ function renderRainTables(rainRows, weatherRows) {
   const monthDailyDetails = {};
 
   weatherRows.forEach(row => {
-    const dateStr = toLocalDateKey(row.created_at);
-    const hourStr = toLocalHourKey(row.created_at);
-    const monthStr = toLocalMonthKey(row.created_at);
-    const ts = new Date(row.created_at).getTime();
+    const { dateStr, hourStr, monthStr, timestamp } = toWarsawParts(row.created_at);
 
     const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
     const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
     const presHpa = presPa != null ? presPa / 100 : null;
 
-    const validTemp = temp != null && isFinite(temp) && temp >= -50 && temp <= 70;
-    const validPres = presPa != null && isFinite(presPa) && presPa >= 85000 && presPa <= 110000;
+    const validTemp = temp != null && isFinite(temp) && temp > -50 && temp < 70;
+    const validPres = presPa != null && isFinite(presPa) && presPa > 85000 && presPa < 110000;
 
     if (dateStr === todayStr) {
       if (!hourlyToday[hourStr]) {
         hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null, latestTs: 0 };
       }
 
-      if (ts >= hourlyToday[hourStr].latestTs) {
+      if (timestamp >= hourlyToday[hourStr].latestTs) {
         if (validTemp) hourlyToday[hourStr].temp = temp;
         if (validPres) hourlyToday[hourStr].pressure = presHpa;
-        hourlyToday[hourStr].latestTs = ts;
+        hourlyToday[hourStr].latestTs = timestamp;
       }
     }
 
@@ -2238,11 +2236,9 @@ function renderRainTables(rainRows, weatherRows) {
   });
 
   rainRows.forEach(row => {
-    const dateStr = toLocalDateKey(row.created_at);
-    const hourStr = toLocalHourKey(row.created_at);
-    const monthStr = toLocalMonthKey(row.created_at);
-
+    const { dateStr, hourStr, monthStr } = toWarsawParts(row.created_at);
     const mm = getRainAmount(row);
+
     if (!isFinite(mm) || mm < 0 || mm > 200) return;
 
     if (dateStr === todayStr) {
@@ -2301,22 +2297,14 @@ function renderRainTables(rainRows, weatherRows) {
 
   Object.values(hourlyToday).forEach(v => delete v.latestTs);
 
-  console.log('hourlyToday:', hourlyToday);
-  console.log('dailyLast7:', dailyLast7);
-  console.log('monthlyTotals:', monthlyTotals);
-  console.log('monthDailyDetails:', monthDailyDetails);
-
   renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
   renderRainMonthDays(monthDailyDetails);
 
-  const c1 = document.getElementById('rainTodayChart');
-  const c2 = document.getElementById('rain7daysChart');
-  const c3 = document.getElementById('rainMonthlyChart');
-  if (c1) c1.style.display = 'none';
-  if (c2) c2.style.display = 'none';
-  if (c3) c3.style.display = 'none';
+  renderRainTodayChart(hourlyToday);
+  renderRainLast7Chart(dailyLast7);
+  renderRainMonthlyChart(monthlyTotals);
 }
 
 function renderRainToday(hourlyToday) {
@@ -2336,15 +2324,23 @@ function renderRainToday(hourlyToday) {
 
     const tr = document.createElement('tr');
 
-    tr.innerHTML = `
-      <td>${h}</td>
-      <td>${mm.toFixed(2)}</td>
-      <td>${
-        (entry.temp != null && isFinite(entry.temp) ? `${entry.temp.toFixed(1)} °C` : '-') +
-        (entry.pressure != null && isFinite(entry.pressure) ? `, ${entry.pressure.toFixed(0)} hPa` : '')
-      }</td>
-    `;
+    const tdHour = document.createElement('td');
+    tdHour.textContent = h;
 
+    const tdMm = document.createElement('td');
+    tdMm.textContent = mm.toFixed(2);
+
+    const tdInfo = document.createElement('td');
+    const t = entry.temp;
+    const p = entry.pressure;
+    let txt = '';
+    if (t != null && isFinite(t)) txt += `${t.toFixed(1)} °C`;
+    if (p != null && isFinite(p)) txt += (txt ? ', ' : '') + `${p.toFixed(0)} hPa`;
+    tdInfo.textContent = txt || '-';
+
+    tr.appendChild(tdHour);
+    tr.appendChild(tdMm);
+    tr.appendChild(tdInfo);
     tbody.appendChild(tr);
   });
 
@@ -2357,18 +2353,33 @@ function renderRainLast7(dailyLast7) {
 
   tbody.innerHTML = '';
 
-  Object.keys(dailyLast7).sort().forEach(d => {
+  const days = Object.keys(dailyLast7).sort();
+
+  days.forEach(d => {
     const entry = dailyLast7[d];
+
     const tr = document.createElement('tr');
 
-    tr.innerHTML = `
-      <td>${d}</td>
-      <td>${Number(entry.mm || 0).toFixed(2)}</td>
-      <td>${entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-'}</td>
-      <td>${entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-'}</td>
-      <td>${entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-'}</td>
-    `;
+    const tdDate = document.createElement('td');
+    tdDate.textContent = d;
 
+    const tdMm = document.createElement('td');
+    tdMm.textContent = Number(entry.mm || 0).toFixed(2);
+
+    const tdTmax = document.createElement('td');
+    tdTmax.textContent = entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-';
+
+    const tdTmin = document.createElement('td');
+    tdTmin.textContent = entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-';
+
+    const tdP = document.createElement('td');
+    tdP.textContent = entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-';
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdMm);
+    tr.appendChild(tdTmax);
+    tr.appendChild(tdTmin);
+    tr.appendChild(tdP);
     tbody.appendChild(tr);
   });
 }
@@ -2379,17 +2390,29 @@ function renderRainMonthly(monthlyTotals) {
 
   tbody.innerHTML = '';
 
-  Object.keys(monthlyTotals).sort().forEach(m => {
+  const months = Object.keys(monthlyTotals).sort();
+
+  months.forEach(m => {
     const entry = monthlyTotals[m];
+
     const tr = document.createElement('tr');
 
-    tr.innerHTML = `
-      <td>${m}</td>
-      <td>${Number(entry.mm || 0).toFixed(2)}</td>
-      <td>${entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-'}</td>
-      <td>${entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-'}</td>
-    `;
+    const tdMonth = document.createElement('td');
+    tdMonth.textContent = m;
 
+    const tdMm = document.createElement('td');
+    tdMm.textContent = Number(entry.mm || 0).toFixed(2);
+
+    const tdTmax = document.createElement('td');
+    tdTmax.textContent = entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-';
+
+    const tdTmin = document.createElement('td');
+    tdTmin.textContent = entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-';
+
+    tr.appendChild(tdMonth);
+    tr.appendChild(tdMm);
+    tr.appendChild(tdTmax);
+    tr.appendChild(tdTmin);
     tbody.appendChild(tr);
   });
 }
@@ -2400,25 +2423,38 @@ function renderRainMonthDays(monthDailyDetails) {
 
   tbody.innerHTML = '';
 
-  Object.keys(monthDailyDetails).sort().forEach(d => {
+  const days = Object.keys(monthDailyDetails).sort();
+
+  days.forEach(d => {
     const entry = monthDailyDetails[d];
+
     const tr = document.createElement('tr');
 
-    tr.innerHTML = `
-      <td>${d}</td>
-      <td>${Number(entry.mm || 0).toFixed(2)}</td>
-      <td>${entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-'}</td>
-      <td>${entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-'}</td>
-      <td>${entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-'}</td>
-    `;
+    const tdDate = document.createElement('td');
+    tdDate.textContent = d;
 
+    const tdMm = document.createElement('td');
+    tdMm.textContent = Number(entry.mm || 0).toFixed(2);
+
+    const tdTmax = document.createElement('td');
+    tdTmax.textContent = entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-';
+
+    const tdTmin = document.createElement('td');
+    tdTmin.textContent = entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-';
+
+    const tdP = document.createElement('td');
+    tdP.textContent = entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-';
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdMm);
+    tr.appendChild(tdTmax);
+    tr.appendChild(tdTmin);
+    tr.appendChild(tdP);
     tbody.appendChild(tr);
   });
 }
 
-// PROSTE WYKRESY OPADÓW (Chart.js)
-
-function renderBarChart(canvasId, existingChart, labels, values, labelText) {
+function renderBarChart(canvasId, existingChart, labels, values, labelText, color = '#22c55e') {
   const canvas = document.getElementById(canvasId);
   if (!canvas || typeof Chart === 'undefined') return existingChart;
 
@@ -2433,15 +2469,19 @@ function renderBarChart(canvasId, existingChart, labels, values, labelText) {
       datasets: [{
         label: labelText,
         data: values,
-        backgroundColor: '#22c55e'
+        backgroundColor: color
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: { ticks: { autoSkip: false } },
-        y: { beginAtZero: true }
+        x: {
+          ticks: { autoSkip: false }
+        },
+        y: {
+          beginAtZero: true
+        }
       },
       plugins: {
         legend: { display: false }
@@ -2453,19 +2493,19 @@ function renderBarChart(canvasId, existingChart, labels, values, labelText) {
 function renderRainTodayChart(hourlyToday) {
   const labels = Object.keys(hourlyToday).sort();
   const values = labels.map(h => Number(hourlyToday[h]?.mm || 0));
-  rainTodayChart = renderBarChart('rainTodayChart', rainTodayChart, labels, values, 'Opad [l/m²]');
+  rainTodayChart = renderBarChart('rainTodayChart', rainTodayChart, labels, values, 'Opad [l/m²]', '#22c55e');
 }
 
 function renderRainLast7Chart(dailyLast7) {
   const labels = Object.keys(dailyLast7).sort();
   const values = labels.map(d => Number(dailyLast7[d]?.mm || 0));
-  rain7daysChart = renderBarChart('rain7daysChart', rain7daysChart, labels, values, 'Opad [l/m²]');
+  rain7daysChart = renderBarChart('rain7daysChart', rain7daysChart, labels, values, 'Opad [l/m²]', '#3b82f6');
 }
 
 function renderRainMonthlyChart(monthlyTotals) {
   const labels = Object.keys(monthlyTotals).sort();
   const values = labels.map(m => Number(monthlyTotals[m]?.mm || 0));
-  rainMonthlyChart = renderBarChart('rainMonthlyChart', rainMonthlyChart, labels, values, 'Opad [l/m²]');
+  rainMonthlyChart = renderBarChart('rainMonthlyChart', rainMonthlyChart, labels, values, 'Opad [l/m²]', '#16a34a');
 }
   
 async function ensureFuelRow(){
