@@ -2372,12 +2372,15 @@ function renderRainTables(rainRows, weatherRows) {
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
 
-  renderRainTodayChart(hourlyToday);
+renderRainTodayChart(hourlyToday);
   renderRainMonthlyChart(monthlyTotals);
 
   const dailyLast7ForChart = Object.fromEntries(
-    Object.entries(dailyLast7).map(([d, v]) => [d, v.mm || 0])
+    Object.entries(dailyLast7).map(([d, v]) => {
+      return [d, v.mm || 0];
+    })
   );
+
   renderRainLast7Chart(dailyLast7ForChart);
 }
 
