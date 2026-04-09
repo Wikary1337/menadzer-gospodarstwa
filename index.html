@@ -857,7 +857,7 @@ button.primary:hover{background:#15803d}
     <tbody id="rainMonthlyTableBody"></tbody>
   </table>
 
-  <h3>Dzienne szczegóły miesiąca</h3>
+  <h3>Dzienne szczegóły bieżącego miesiąca</h3>
   <table border="1" cellpadding="4" cellspacing="0" style="width:100%;">
     <thead>
       <tr>
@@ -870,8 +870,6 @@ button.primary:hover{background:#15803d}
     </thead>
     <tbody id="rainMonthDaysTableBody"></tbody>
   </table>
-</div>
-  </div>
 </div>
   
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -2073,13 +2071,13 @@ document.addEventListener('change', e=>{
   }
 });
 
-//  O P A D Y  –  ŁADOWANIE I AGREGACJA
+// O P A D Y – ŁADOWANIE I AGREGACJA
 
 async function loadRainData() {
   console.log('loadRainData start');
 
   const now = new Date();
-  const daysBack = 60;
+  const daysBack = 90;
   const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
   const fromIso = fromDate.toISOString();
 
@@ -2089,8 +2087,8 @@ async function loadRainData() {
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
-  console.log('rainRows =', rainRows);
-  console.log('rainErr =', rainErr);
+  console.log('rainRows:', rainRows);
+  console.log('rainErr:', rainErr);
 
   if (rainErr) {
     console.error('Błąd ładowania opadów:', rainErr);
@@ -2103,8 +2101,8 @@ async function loadRainData() {
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
-  console.log('weatherRows =', weatherRows);
-  console.log('weatherErr =', weatherErr);
+  console.log('weatherRows:', weatherRows);
+  console.log('weatherErr:', weatherErr);
 
   if (weatherErr) {
     console.error('Błąd ładowania pogody:', weatherErr);
@@ -2136,6 +2134,7 @@ function toLocalMonthKey(dateValue) {
 function renderRainTables(rainRows, weatherRows) {
   const now = new Date();
   const todayStr = toLocalDateKey(now);
+  const currentMonthStr = toLocalMonthKey(now);
 
   const sevenDayKeys = [];
   for (let i = 6; i >= 0; i--) {
@@ -2148,9 +2147,8 @@ function renderRainTables(rainRows, weatherRows) {
   const hourlyToday = {};
   const dailyLast7 = {};
   const monthlyTotals = {};
+  const monthDailyDetails = {};
 
-  // 1) Najpierw inicjalizujemy dane pogodowe,
-  // nawet jeśli nie było żadnego deszczu
   weatherRows.forEach(row => {
     const dateStr = toLocalDateKey(row.created_at);
     const hourStr = toLocalHourKey(row.created_at);
@@ -2160,112 +2158,111 @@ function renderRainTables(rainRows, weatherRows) {
     const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
     const presHpa = presPa != null ? presPa / 100 : null;
 
-    const validTemp = temp != null && isFinite(temp) && temp >= -40 && temp <= 60;
+    const validTemp = temp != null && isFinite(temp) && temp >= -50 && temp <= 70;
     const validPres = presPa != null && isFinite(presPa) && presPa >= 85000 && presPa <= 110000;
 
     if (dateStr === todayStr) {
       if (!hourlyToday[hourStr]) {
-        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null, latestTs: 0 };
       }
-      if (validTemp) hourlyToday[hourStr].temp = temp;
-      if (validPres) hourlyToday[hourStr].pressure = presHpa;
+      const ts = new Date(row.created_at).getTime();
+      if (ts >= (hourlyToday[hourStr].latestTs || 0)) {
+        if (validTemp) hourlyToday[hourStr].temp = temp;
+        if (validPres) hourlyToday[hourStr].pressure = presHpa;
+        hourlyToday[hourStr].latestTs = ts;
+      }
     }
 
     if (sevenDaySet.has(dateStr)) {
       if (!dailyLast7[dateStr]) {
-        dailyLast7[dateStr] = {
-          mm: 0,
-          tmax: null,
-          tmin: null,
-          pSum: 0,
-          pCount: 0
-        };
+        dailyLast7[dateStr] = { mm: 0, tmax: null, tmin: null, pSum: 0, pCount: 0 };
       }
 
-      const d = dailyLast7[dateStr];
-
       if (validTemp) {
-        if (d.tmax == null || temp > d.tmax) d.tmax = temp;
-        if (d.tmin == null || temp < d.tmin) d.tmin = temp;
+        if (dailyLast7[dateStr].tmax == null || temp > dailyLast7[dateStr].tmax) dailyLast7[dateStr].tmax = temp;
+        if (dailyLast7[dateStr].tmin == null || temp < dailyLast7[dateStr].tmin) dailyLast7[dateStr].tmin = temp;
       }
 
       if (validPres) {
-        d.pSum += presHpa;
-        d.pCount += 1;
+        dailyLast7[dateStr].pSum += presHpa;
+        dailyLast7[dateStr].pCount += 1;
       }
     }
 
     if (!monthlyTotals[monthStr]) {
-      monthlyTotals[monthStr] = {
-        mm: 0,
-        tmax: null,
-        tmin: null
-      };
+      monthlyTotals[monthStr] = { mm: 0, tmax: null, tmin: null };
     }
 
     if (validTemp) {
-      if (monthlyTotals[monthStr].tmax == null || temp > monthlyTotals[monthStr].tmax) {
-        monthlyTotals[monthStr].tmax = temp;
+      if (monthlyTotals[monthStr].tmax == null || temp > monthlyTotals[monthStr].tmax) monthlyTotals[monthStr].tmax = temp;
+      if (monthlyTotals[monthStr].tmin == null || temp < monthlyTotals[monthStr].tmin) monthlyTotals[monthStr].tmin = temp;
+    }
+
+    if (monthStr === currentMonthStr) {
+      if (!monthDailyDetails[dateStr]) {
+        monthDailyDetails[dateStr] = { mm: 0, tmax: null, tmin: null, pSum: 0, pCount: 0 };
       }
-      if (monthlyTotals[monthStr].tmin == null || temp < monthlyTotals[monthStr].tmin) {
-        monthlyTotals[monthStr].tmin = temp;
+
+      if (validTemp) {
+        if (monthDailyDetails[dateStr].tmax == null || temp > monthDailyDetails[dateStr].tmax) monthDailyDetails[dateStr].tmax = temp;
+        if (monthDailyDetails[dateStr].tmin == null || temp < monthDailyDetails[dateStr].tmin) monthDailyDetails[dateStr].tmin = temp;
+      }
+
+      if (validPres) {
+        monthDailyDetails[dateStr].pSum += presHpa;
+        monthDailyDetails[dateStr].pCount += 1;
       }
     }
   });
 
-  // 2) Dopiero potem dokładamy opad
   rainRows.forEach(row => {
     const dateStr = toLocalDateKey(row.created_at);
     const hourStr = toLocalHourKey(row.created_at);
     const monthStr = toLocalMonthKey(row.created_at);
 
     const mm = Number(row.amount_mm || 0);
-    if (!isFinite(mm) || mm < 0 || mm > 50) return;
+    if (!isFinite(mm) || mm < 0 || mm > 200) return;
 
     if (dateStr === todayStr) {
       if (!hourlyToday[hourStr]) {
-        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null, latestTs: 0 };
       }
       hourlyToday[hourStr].mm += mm;
     }
 
     if (sevenDaySet.has(dateStr)) {
       if (!dailyLast7[dateStr]) {
-        dailyLast7[dateStr] = {
-          mm: 0,
-          tmax: null,
-          tmin: null,
-          pSum: 0,
-          pCount: 0
-        };
+        dailyLast7[dateStr] = { mm: 0, tmax: null, tmin: null, pSum: 0, pCount: 0 };
       }
       dailyLast7[dateStr].mm += mm;
     }
 
     if (!monthlyTotals[monthStr]) {
-      monthlyTotals[monthStr] = {
-        mm: 0,
-        tmax: null,
-        tmin: null
-      };
+      monthlyTotals[monthStr] = { mm: 0, tmax: null, tmin: null };
     }
     monthlyTotals[monthStr].mm += mm;
-  });
 
-  // 3) Uzupełnij brakujące dni w ostatnich 7 dniach
-  sevenDayKeys.forEach(dateStr => {
-    if (!dailyLast7[dateStr]) {
-      dailyLast7[dateStr] = {
-        mm: 0,
-        tmax: null,
-        tmin: null,
-        pSum: 0,
-        pCount: 0
-      };
+    if (monthStr === currentMonthStr) {
+      if (!monthDailyDetails[dateStr]) {
+        monthDailyDetails[dateStr] = { mm: 0, tmax: null, tmin: null, pSum: 0, pCount: 0 };
+      }
+      monthDailyDetails[dateStr].mm += mm;
     }
   });
 
-  // 4) Średnie ciśnienie dzienne
+  for (let h = 0; h < 24; h++) {
+    const hourKey = `${String(h).padStart(2, '0')}:00`;
+    if (!hourlyToday[hourKey]) {
+      hourlyToday[hourKey] = { mm: 0, temp: null, pressure: null, latestTs: 0 };
+    }
+  }
+
+  sevenDayKeys.forEach(dateStr => {
+    if (!dailyLast7[dateStr]) {
+      dailyLast7[dateStr] = { mm: 0, tmax: null, tmin: null, pSum: 0, pCount: 0 };
+    }
+  });
+
   Object.keys(dailyLast7).forEach(dateStr => {
     const d = dailyLast7[dateStr];
     d.pressure = d.pCount > 0 ? d.pSum / d.pCount : null;
@@ -2273,21 +2270,23 @@ function renderRainTables(rainRows, weatherRows) {
     delete d.pCount;
   });
 
-  console.log('hourlyToday:', hourlyToday);
-  console.log('dailyLast7:', dailyLast7);
-  console.log('monthlyTotals:', monthlyTotals);
+  Object.keys(monthDailyDetails).forEach(dateStr => {
+    const d = monthDailyDetails[dateStr];
+    d.pressure = d.pCount > 0 ? d.pSum / d.pCount : null;
+    delete d.pSum;
+    delete d.pCount;
+  });
+
+  Object.values(hourlyToday).forEach(v => delete v.latestTs);
 
   renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
+  renderRainMonthDays(monthDailyDetails);
 
   if (typeof renderRainTodayChart === 'function') renderRainTodayChart(hourlyToday);
+  if (typeof renderRainLast7Chart === 'function') renderRainLast7Chart(dailyLast7);
   if (typeof renderRainMonthlyChart === 'function') renderRainMonthlyChart(monthlyTotals);
-
-  const dailyLast7ForChart = Object.fromEntries(
-    Object.entries(dailyLast7).map(([d, v]) => [d, v.mm || 0])
-  );
-  if (typeof renderRainLast7Chart === 'function') renderRainLast7Chart(dailyLast7ForChart);
 }
 
 function renderRainToday(hourlyToday) {
@@ -2316,9 +2315,7 @@ function renderRainToday(hourlyToday) {
     const tdInfo = document.createElement('td');
     let txt = '';
     if (entry.temp != null && isFinite(entry.temp)) txt += `${entry.temp.toFixed(1)} °C`;
-    if (entry.pressure != null && isFinite(entry.pressure)) {
-      txt += (txt ? ', ' : '') + `${entry.pressure.toFixed(0)} hPa`;
-    }
+    if (entry.pressure != null && isFinite(entry.pressure)) txt += (txt ? ', ' : '') + `${entry.pressure.toFixed(0)} hPa`;
     tdInfo.textContent = txt || '-';
 
     tr.appendChild(tdHour);
@@ -2336,33 +2333,18 @@ function renderRainLast7(dailyLast7) {
 
   tbody.innerHTML = '';
 
-  const days = Object.keys(dailyLast7).sort();
-
-  days.forEach(d => {
+  Object.keys(dailyLast7).sort().forEach(d => {
     const entry = dailyLast7[d];
-
     const tr = document.createElement('tr');
 
-    const tdDate = document.createElement('td');
-    tdDate.textContent = d;
+    tr.innerHTML = `
+      <td>${d}</td>
+      <td>${Number(entry.mm || 0).toFixed(2)}</td>
+      <td>${entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-'}</td>
+      <td>${entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-'}</td>
+      <td>${entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-'}</td>
+    `;
 
-    const tdMm = document.createElement('td');
-    tdMm.textContent = Number(entry.mm || 0).toFixed(2);
-
-    const tdTmax = document.createElement('td');
-    tdTmax.textContent = entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-';
-
-    const tdTmin = document.createElement('td');
-    tdTmin.textContent = entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-';
-
-    const tdP = document.createElement('td');
-    tdP.textContent = entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-';
-
-    tr.appendChild(tdDate);
-    tr.appendChild(tdMm);
-    tr.appendChild(tdTmax);
-    tr.appendChild(tdTmin);
-    tr.appendChild(tdP);
     tbody.appendChild(tr);
   });
 }
@@ -2373,29 +2355,39 @@ function renderRainMonthly(monthlyTotals) {
 
   tbody.innerHTML = '';
 
-  const months = Object.keys(monthlyTotals).sort();
-
-  months.forEach(m => {
+  Object.keys(monthlyTotals).sort().forEach(m => {
     const entry = monthlyTotals[m];
-
     const tr = document.createElement('tr');
 
-    const tdMonth = document.createElement('td');
-    tdMonth.textContent = m;
+    tr.innerHTML = `
+      <td>${m}</td>
+      <td>${Number(entry.mm || 0).toFixed(2)}</td>
+      <td>${entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-'}</td>
+      <td>${entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-'}</td>
+    `;
 
-    const tdMm = document.createElement('td');
-    tdMm.textContent = Number(entry.mm || 0).toFixed(2);
+    tbody.appendChild(tr);
+  });
+}
 
-    const tdTmax = document.createElement('td');
-    tdTmax.textContent = entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-';
+function renderRainMonthDays(monthDailyDetails) {
+  const tbody = document.getElementById('rainMonthDaysTableBody');
+  if (!tbody) return;
 
-    const tdTmin = document.createElement('td');
-    tdTmin.textContent = entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-';
+  tbody.innerHTML = '';
 
-    tr.appendChild(tdMonth);
-    tr.appendChild(tdMm);
-    tr.appendChild(tdTmax);
-    tr.appendChild(tdTmin);
+  Object.keys(monthDailyDetails).sort().forEach(d => {
+    const entry = monthDailyDetails[d];
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${d}</td>
+      <td>${Number(entry.mm || 0).toFixed(2)}</td>
+      <td>${entry.tmax != null && isFinite(entry.tmax) ? entry.tmax.toFixed(1) : '-'}</td>
+      <td>${entry.tmin != null && isFinite(entry.tmin) ? entry.tmin.toFixed(1) : '-'}</td>
+      <td>${entry.pressure != null && isFinite(entry.pressure) ? entry.pressure.toFixed(0) : '-'}</td>
+    `;
+
     tbody.appendChild(tr);
   });
 }
