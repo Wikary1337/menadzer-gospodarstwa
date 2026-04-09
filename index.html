@@ -2073,6 +2073,10 @@ document.addEventListener('change', e=>{
 
 // O P A D Y – ŁADOWANIE I AGREGACJA
 
+let rainTodayChart = null;
+let rain7daysChart = null;
+let rainMonthlyChart = null;
+
 async function loadRainData() {
   console.log('loadRainData start');
 
@@ -2106,6 +2110,7 @@ async function loadRainData() {
 
   if (weatherErr) {
     console.error('Błąd ładowania pogody:', weatherErr);
+    return;
   }
 
   renderRainTables(rainRows || [], weatherRows || []);
@@ -2153,6 +2158,7 @@ function renderRainTables(rainRows, weatherRows) {
     const dateStr = toLocalDateKey(row.created_at);
     const hourStr = toLocalHourKey(row.created_at);
     const monthStr = toLocalMonthKey(row.created_at);
+    const ts = new Date(row.created_at).getTime();
 
     const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
     const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
@@ -2165,8 +2171,8 @@ function renderRainTables(rainRows, weatherRows) {
       if (!hourlyToday[hourStr]) {
         hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null, latestTs: 0 };
       }
-      const ts = new Date(row.created_at).getTime();
-      if (ts >= (hourlyToday[hourStr].latestTs || 0)) {
+
+      if (ts >= hourlyToday[hourStr].latestTs) {
         if (validTemp) hourlyToday[hourStr].temp = temp;
         if (validPres) hourlyToday[hourStr].pressure = presHpa;
         hourlyToday[hourStr].latestTs = ts;
@@ -2279,14 +2285,19 @@ function renderRainTables(rainRows, weatherRows) {
 
   Object.values(hourlyToday).forEach(v => delete v.latestTs);
 
+  console.log('hourlyToday:', hourlyToday);
+  console.log('dailyLast7:', dailyLast7);
+  console.log('monthlyTotals:', monthlyTotals);
+  console.log('monthDailyDetails:', monthDailyDetails);
+
   renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
   renderRainMonthDays(monthDailyDetails);
 
-  if (typeof renderRainTodayChart === 'function') renderRainTodayChart(hourlyToday);
-  if (typeof renderRainLast7Chart === 'function') renderRainLast7Chart(dailyLast7);
-  if (typeof renderRainMonthlyChart === 'function') renderRainMonthlyChart(monthlyTotals);
+  renderRainTodayChart(hourlyToday);
+  renderRainLast7Chart(dailyLast7);
+  renderRainMonthlyChart(monthlyTotals);
 }
 
 function renderRainToday(hourlyToday) {
@@ -2315,7 +2326,9 @@ function renderRainToday(hourlyToday) {
     const tdInfo = document.createElement('td');
     let txt = '';
     if (entry.temp != null && isFinite(entry.temp)) txt += `${entry.temp.toFixed(1)} °C`;
-    if (entry.pressure != null && isFinite(entry.pressure)) txt += (txt ? ', ' : '') + `${entry.pressure.toFixed(0)} hPa`;
+    if (entry.pressure != null && isFinite(entry.pressure)) {
+      txt += (txt ? ', ' : '') + `${entry.pressure.toFixed(0)} hPa`;
+    }
     tdInfo.textContent = txt || '-';
 
     tr.appendChild(tdHour);
@@ -2394,19 +2407,15 @@ function renderRainMonthDays(monthDailyDetails) {
 
 // PROSTE WYKRESY OPADÓW (Chart.js)
 
-let rainTodayChart = null;
-let rain7daysChart = null;
-let rainMonthlyChart = null;
+function renderBarChart(canvasId, existingChart, labels, values, labelText) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === 'undefined') return existingChart;
 
-function renderBarChart(canvasId, chartRef, labels, values, labelText) {
-  const ctx = document.getElementById(canvasId);
-  if (!ctx) return;
-
-  if (chartRef && typeof chartRef.destroy === 'function') {
-    chartRef.destroy();
+  if (existingChart && typeof existingChart.destroy === 'function') {
+    existingChart.destroy();
   }
 
-  const newChart = new Chart(ctx, {
+  return new Chart(canvas, {
     type: 'bar',
     data: {
       labels,
@@ -2417,6 +2426,8 @@ function renderBarChart(canvasId, chartRef, labels, values, labelText) {
       }]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       scales: {
         x: { ticks: { autoSkip: false } },
         y: { beginAtZero: true }
@@ -2426,47 +2437,25 @@ function renderBarChart(canvasId, chartRef, labels, values, labelText) {
       }
     }
   });
-
-  return newChart;
 }
 
 function renderRainTodayChart(hourlyToday) {
   const labels = Object.keys(hourlyToday).sort();
-  const values = labels.map(h => (hourlyToday[h]?.mm ?? hourlyToday[h] ?? 0));
-  rainTodayChart = renderBarChart(
-    'rainTodayChart',
-    rainTodayChart,
-    labels,
-    values,
-    'Opad [l/m²]'
-  );
+  const values = labels.map(h => Number(hourlyToday[h]?.mm || 0));
+  rainTodayChart = renderBarChart('rainTodayChart', rainTodayChart, labels, values, 'Opad [l/m²]');
 }
 
-function renderRainLast7Chart(dailyLast7ForChart) {
-  const labels = Object.keys(dailyLast7ForChart).sort();
-  const values = labels.map(d => dailyLast7ForChart[d] || 0);
-  rain7daysChart = renderBarChart(
-    'rain7daysChart',
-    rain7daysChart,
-    labels,
-    values,
-    'Opad [l/m²]'
-  );
+function renderRainLast7Chart(dailyLast7) {
+  const labels = Object.keys(dailyLast7).sort();
+  const values = labels.map(d => Number(dailyLast7[d]?.mm || 0));
+  rain7daysChart = renderBarChart('rain7daysChart', rain7daysChart, labels, values, 'Opad [l/m²]');
 }
 
 function renderRainMonthlyChart(monthlyTotals) {
   const labels = Object.keys(monthlyTotals).sort();
-  const values = labels.map(m => monthlyTotals[m]?.mm ?? 0);
-  rainMonthlyChart = renderBarChart(
-    'rainMonthlyChart',
-    rainMonthlyChart,
-    labels,
-    values,
-    'Opad [l/m²]'
-  );
+  const values = labels.map(m => Number(monthlyTotals[m]?.mm || 0));
+  rainMonthlyChart = renderBarChart('rainMonthlyChart', rainMonthlyChart, labels, values, 'Opad [l/m²]');
 }
-  
-/* MAGAZYN */
   
 async function ensureFuelRow(){
   const { data, error } = await supabaseClient
