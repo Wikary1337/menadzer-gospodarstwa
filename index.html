@@ -2139,44 +2139,8 @@ function renderRainTables(rainRows, weatherRows) {
   const dailyLast7 = {};
   const monthlyTotals = {};
 
-  rainRows.forEach(row => {
-    const dateStr = toLocalDateKey(row.created_at);
-    const hourStr = toLocalHourKey(row.created_at);
-    const monthStr = toLocalMonthKey(row.created_at);
-
-    const mm = Number(row.amount_mm || 0);
-    if (!isFinite(mm) || mm < 0 || mm > 50) return;
-
-    if (dateStr === todayStr) {
-      if (!hourlyToday[hourStr]) {
-        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
-      }
-      hourlyToday[hourStr].mm += mm;
-    }
-
-    if (sevenDaySet.has(dateStr)) {
-      if (!dailyLast7[dateStr]) {
-        dailyLast7[dateStr] = {
-          mm: 0,
-          tmax: null,
-          tmin: null,
-          pSum: 0,
-          pCount: 0
-        };
-      }
-      dailyLast7[dateStr].mm += mm;
-    }
-
-    if (!monthlyTotals[monthStr]) {
-      monthlyTotals[monthStr] = {
-        mm: 0,
-        tmax: null,
-        tmin: null
-      };
-    }
-    monthlyTotals[monthStr].mm += mm;
-  });
-
+  // 1) Najpierw inicjalizujemy dane pogodowe,
+  // nawet jeśli nie było żadnego deszczu
   weatherRows.forEach(row => {
     const dateStr = toLocalDateKey(row.created_at);
     const hourStr = toLocalHourKey(row.created_at);
@@ -2239,6 +2203,46 @@ function renderRainTables(rainRows, weatherRows) {
     }
   });
 
+  // 2) Dopiero potem dokładamy opad
+  rainRows.forEach(row => {
+    const dateStr = toLocalDateKey(row.created_at);
+    const hourStr = toLocalHourKey(row.created_at);
+    const monthStr = toLocalMonthKey(row.created_at);
+
+    const mm = Number(row.amount_mm || 0);
+    if (!isFinite(mm) || mm < 0 || mm > 50) return;
+
+    if (dateStr === todayStr) {
+      if (!hourlyToday[hourStr]) {
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+      }
+      hourlyToday[hourStr].mm += mm;
+    }
+
+    if (sevenDaySet.has(dateStr)) {
+      if (!dailyLast7[dateStr]) {
+        dailyLast7[dateStr] = {
+          mm: 0,
+          tmax: null,
+          tmin: null,
+          pSum: 0,
+          pCount: 0
+        };
+      }
+      dailyLast7[dateStr].mm += mm;
+    }
+
+    if (!monthlyTotals[monthStr]) {
+      monthlyTotals[monthStr] = {
+        mm: 0,
+        tmax: null,
+        tmin: null
+      };
+    }
+    monthlyTotals[monthStr].mm += mm;
+  });
+
+  // 3) Uzupełnij brakujące dni w ostatnich 7 dniach
   sevenDayKeys.forEach(dateStr => {
     if (!dailyLast7[dateStr]) {
       dailyLast7[dateStr] = {
@@ -2251,6 +2255,7 @@ function renderRainTables(rainRows, weatherRows) {
     }
   });
 
+  // 4) Średnie ciśnienie dzienne
   Object.keys(dailyLast7).forEach(dateStr => {
     const d = dailyLast7[dateStr];
     d.pressure = d.pCount > 0 ? d.pSum / d.pCount : null;
