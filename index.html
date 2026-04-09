@@ -2103,26 +2103,20 @@ async function loadRainData() {
 function toWarsawParts(dateValue) {
   const d = new Date(dateValue);
 
-  const parts = new Intl.DateTimeFormat('pl-PL', {
-    timeZone: 'Europe/Warsaw',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    hour12: false
-  }).formatToParts(d);
+  const local = new Date(
+    d.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
+  );
 
-  const get = type => parts.find(p => p.type === type)?.value || '';
-
-  const year = get('year');
-  const month = get('month');
-  const day = get('day');
-  const hour = get('hour');
+  const year = local.getFullYear();
+  const month = String(local.getMonth() + 1).padStart(2, '0');
+  const day = String(local.getDate()).padStart(2, '0');
+  const hour = String(local.getHours()).padStart(2, '0');
 
   return {
     dateStr: `${year}-${month}-${day}`,
     hourStr: `${hour}:00`,
-    monthStr: `${year}-${month}`
+    monthStr: `${year}-${month}`,
+    ts: local.getTime()
   };
 }
 
@@ -2152,7 +2146,6 @@ function renderRainTables(rainRows, weatherRows) {
 
     const mmRaw = Number(row.amount_mm);
     if (!isFinite(mmRaw) || mmRaw < 0 || mmRaw > 50) {
-      console.log('Ignoruję podejrzany pomiar opadu:', row);
       return;
     }
 
@@ -2160,9 +2153,9 @@ function renderRainTables(rainRows, weatherRows) {
 
     if (dateStr === todayStr) {
       if (!hourlyToday[hourStr]) {
-        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null };
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null, weatherTs: 0 };
       }
-      hourlyToday[hourStr].mm = mm;
+      hourlyToday[hourStr].mm += mm;
     }
 
     if (sevenDaySet.has(dateStr)) {
@@ -2187,6 +2180,112 @@ function renderRainTables(rainRows, weatherRows) {
     }
     monthlyTotals[monthStr].mm += mm;
   });
+
+  // -------- 2) POGODA --------
+  weatherRows.forEach(row => {
+    const { dateStr, hourStr, monthStr, ts } = toWarsawParts(row.created_at);
+
+    const temp = row.temperature_c != null ? Number(row.temperature_c) : null;
+    const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
+    const presHpa = presPa != null ? presPa / 100 : null;
+
+    const tempOk = temp != null && isFinite(temp) && temp > -50 && temp < 60;
+    const presOk = presHpa != null && isFinite(presHpa) && presHpa > 850 && presHpa < 1100;
+
+    if (dateStr === todayStr) {
+      if (!hourlyToday[hourStr]) {
+        hourlyToday[hourStr] = { mm: 0, temp: null, pressure: null, weatherTs: 0 };
+      }
+
+      // bierz ostatni pomiar w danej godzinie
+      if (ts >= hourlyToday[hourStr].weatherTs) {
+        if (tempOk) hourlyToday[hourStr].temp = temp;
+        if (presOk) hourlyToday[hourStr].pressure = presHpa;
+        hourlyToday[hourStr].weatherTs = ts;
+      }
+    }
+
+    if (sevenDaySet.has(dateStr)) {
+      if (!dailyLast7[dateStr]) {
+        dailyLast7[dateStr] = {
+          mm: 0,
+          tmax: null,
+          tmin: null,
+          pSum: 0,
+          pCount: 0
+        };
+      }
+
+      const d = dailyLast7[dateStr];
+
+      if (tempOk) {
+        if (d.tmax == null || temp > d.tmax) d.tmax = temp;
+        if (d.tmin == null || temp < d.tmin) d.tmin = temp;
+      }
+
+      if (presOk) {
+        d.pSum += presHpa;
+        d.pCount += 1;
+      }
+    }
+
+    if (!monthlyTotals[monthStr]) {
+      monthlyTotals[monthStr] = {
+        mm: 0,
+        tmax: null,
+        tmin: null
+      };
+    }
+
+    if (tempOk) {
+      if (monthlyTotals[monthStr].tmax == null || temp > monthlyTotals[monthStr].tmax) {
+        monthlyTotals[monthStr].tmax = temp;
+      }
+      if (monthlyTotals[monthStr].tmin == null || temp < monthlyTotals[monthStr].tmin) {
+        monthlyTotals[monthStr].tmin = temp;
+      }
+    }
+  });
+
+  sevenDayKeys.forEach(dateStr => {
+    if (!dailyLast7[dateStr]) {
+      dailyLast7[dateStr] = {
+        mm: 0,
+        tmax: null,
+        tmin: null,
+        pSum: 0,
+        pCount: 0
+      };
+    }
+  });
+
+  Object.keys(dailyLast7).forEach(d => {
+    const entry = dailyLast7[d];
+    entry.pressure = entry.pCount > 0 ? entry.pSum / entry.pCount : null;
+    delete entry.pSum;
+    delete entry.pCount;
+  });
+
+  Object.keys(hourlyToday).forEach(h => {
+    delete hourlyToday[h].weatherTs;
+  });
+
+  console.log('hourlyToday:', hourlyToday);
+  console.log('dailyLast7:', dailyLast7);
+  console.log('monthlyTotals:', monthlyTotals);
+
+  renderRainToday(hourlyToday);
+  renderRainLast7(dailyLast7);
+  renderRainMonthly(monthlyTotals);
+
+  renderRainTodayChart(hourlyToday);
+  renderRainMonthlyChart(monthlyTotals);
+
+  const dailyLast7ForChart = Object.fromEntries(
+    Object.entries(dailyLast7).map(([d, v]) => [d, v.mm || 0])
+  );
+  renderRainLast7Chart(dailyLast7ForChart);
+}
 
   // -------- 2) POGODA --------
   weatherRows.forEach(row => {
