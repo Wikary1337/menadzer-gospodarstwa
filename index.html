@@ -2073,10 +2073,6 @@ document.addEventListener('change', e=>{
 
 // O P A D Y – ŁADOWANIE I AGREGACJA
 
-let rainTodayChart = null;
-let rain7daysChart = null;
-let rainMonthlyChart = null;
-
 async function loadRainData() {
   console.log('loadRainData start');
 
@@ -2087,11 +2083,11 @@ async function loadRainData() {
 
   const { data: rainRows, error: rainErr } = await supabaseClient
     .from('rainmeasurements')
-    .select('created_at, amount_mm')
+    .select('*')
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
-  console.log('rainRows:', rainRows);
+  console.log('rainRows raw:', rainRows);
   console.log('rainErr:', rainErr);
 
   if (rainErr) {
@@ -2114,6 +2110,23 @@ async function loadRainData() {
   }
 
   renderRainTables(rainRows || [], weatherRows || []);
+}
+
+function getRainAmount(row) {
+  const candidates = [
+    row.amount_mm,
+    row.rain_mm,
+    row.mm,
+    row.amount,
+    row.value
+  ];
+
+  for (const v of candidates) {
+    const n = Number(v);
+    if (isFinite(n)) return n;
+  }
+
+  return 0;
 }
 
 function toLocalDateKey(dateValue) {
@@ -2226,7 +2239,7 @@ function renderRainTables(rainRows, weatherRows) {
     const hourStr = toLocalHourKey(row.created_at);
     const monthStr = toLocalMonthKey(row.created_at);
 
-    const mm = Number(row.amount_mm || 0);
+    const mm = getRainAmount(row);
     if (!isFinite(mm) || mm < 0 || mm > 200) return;
 
     if (dateStr === todayStr) {
@@ -2295,9 +2308,12 @@ function renderRainTables(rainRows, weatherRows) {
   renderRainMonthly(monthlyTotals);
   renderRainMonthDays(monthDailyDetails);
 
-  renderRainTodayChart(hourlyToday);
-  renderRainLast7Chart(dailyLast7);
-  renderRainMonthlyChart(monthlyTotals);
+  const c1 = document.getElementById('rainTodayChart');
+  const c2 = document.getElementById('rain7daysChart');
+  const c3 = document.getElementById('rainMonthlyChart');
+  if (c1) c1.style.display = 'none';
+  if (c2) c2.style.display = 'none';
+  if (c3) c3.style.display = 'none';
 }
 
 function renderRainToday(hourlyToday) {
@@ -2317,23 +2333,15 @@ function renderRainToday(hourlyToday) {
 
     const tr = document.createElement('tr');
 
-    const tdHour = document.createElement('td');
-    tdHour.textContent = h;
+    tr.innerHTML = `
+      <td>${h}</td>
+      <td>${mm.toFixed(2)}</td>
+      <td>${
+        (entry.temp != null && isFinite(entry.temp) ? `${entry.temp.toFixed(1)} °C` : '-') +
+        (entry.pressure != null && isFinite(entry.pressure) ? `, ${entry.pressure.toFixed(0)} hPa` : '')
+      }</td>
+    `;
 
-    const tdMm = document.createElement('td');
-    tdMm.textContent = mm.toFixed(2);
-
-    const tdInfo = document.createElement('td');
-    let txt = '';
-    if (entry.temp != null && isFinite(entry.temp)) txt += `${entry.temp.toFixed(1)} °C`;
-    if (entry.pressure != null && isFinite(entry.pressure)) {
-      txt += (txt ? ', ' : '') + `${entry.pressure.toFixed(0)} hPa`;
-    }
-    tdInfo.textContent = txt || '-';
-
-    tr.appendChild(tdHour);
-    tr.appendChild(tdMm);
-    tr.appendChild(tdInfo);
     tbody.appendChild(tr);
   });
 
