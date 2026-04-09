@@ -447,7 +447,7 @@ button.primary:hover{background:#15803d}
     <button onclick="showTab('warehouse')">Magazyn</button>
     <button onclick="showTab('machines')">Maszyny</button>
     <button onclick="showTab('seasons')">Sezony</button>
-    <button onclick="showTab('rain')">Opady</button>
+    <button onclick="showTab('rainSection')">Opady</button>
   </div>
 
   <!-- START -->
@@ -811,7 +811,7 @@ button.primary:hover{background:#15803d}
   </div>
 
 <!-- OPADY -->
-<div id="rainSection" style="display:none; padding: 10px;">
+<div id="rainSection" class="section" style="padding: 10px;">
   <h2>Opady</h2>
 
   <h3>Dzisiejsze opady</h3>
@@ -996,7 +996,7 @@ function showTab(id){
   if(id === 'seasons'){
     loadSeasonSummary();
   }
-  if(id === 'rain'){
+  if(id === 'rainSection'){
     loadRainData();  // ← tylko ta funkcja, żadnego loadRainToday()
   }
 }
