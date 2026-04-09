@@ -3481,6 +3481,10 @@ async function loadSeasonSummary(){
 
 document.addEventListener('DOMContentLoaded', async () => {
   initMap();
+
+  resetTreatmentItemRows();
+  resetExtraItemRows();
+
   await ensureFuelRow();
   await loadCrops();
   await loadFields();
@@ -3491,9 +3495,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadMachines();
   await loadSeasonSummary();
   await loadStartWeather();
-  await loadRainData();      // ← DODAJ TO
+  await loadRainData();
+
   updateStartClock();
   setInterval(updateStartClock, 60000);
+
   await updateStartMetrics();
 });
 </script>
