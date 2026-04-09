@@ -815,44 +815,52 @@ button.primary:hover{background:#15803d}
   <h2>Opady</h2>
 
   <h3>Dzisiejsze opady</h3>
-<p>Razem: <span id="rainTodayTotal">0.0</span> mm</p>
-<table border="1" cellpadding="4" cellspacing="0">
-  <thead>
-    <tr>
-      <th>Godzina</th>
-      <th>Opad mm</th>
-      <th>T / p</th>
-    </tr>
-  </thead>
-  <tbody id="rainTodayTableBody"></tbody>
-</table>
+  <p>
+    Razem: <span id="rainTodayTotal">0.0</span> l/m²
+  </p>
+  <table class="table small">
+    <thead>
+      <tr>
+        <th>Godzina</th>
+        <th>Opad [l/m²]</th>
+        <th>T [°C] / p [hPa]</th>
+      </tr>
+    </thead>
+    <tbody id="rainTodayTableBody"></tbody>
+  </table>
 
-<h3>Ostatnie 7 dni</h3>
-<table border="1" cellpadding="4" cellspacing="0">
-  <thead>
-    <tr>
-      <th>Data</th>
-      <th>Opad mm</th>
-      <th>T max</th>
-      <th>T min</th>
-      <th>Ciśnienie hPa</th>
-    </tr>
-  </thead>
-  <tbody id="rain7daysTableBody"></tbody>
-</table>
+  <div class="columns" style="margin-top:16px;">
+    <div class="col">
+      <h3>Ostatnie 7 dni</h3>
+      <canvas id="rain7daysChart"></canvas>
+      <table class="table small" style="margin-top:8px;">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Opad [l/m²]</th>
+            <th>T max [°C]</th>
+            <th>T min [°C]</th>
+            <th>Ciśnienie [hPa]</th>
+          </tr>
+        </thead>
+        <tbody id="rain7daysTableBody"></tbody>
+      </table>
+    </div>
 
-<h3>Opady miesięczne</h3>
-<table border="1" cellpadding="4" cellspacing="0">
-  <thead>
-    <tr>
-      <th>Miesiąc</th>
-      <th>Opad mm</th>
-      <th>T max</th>
-      <th>T min</th>
-    </tr>
-  </thead>
-  <tbody id="rainMonthlyTableBody"></tbody>
-</table>
+    <div class="col">
+      <h3>Opady miesięczne</h3>
+      <canvas id="rainMonthlyChart"></canvas>
+      <table class="table small" style="margin-top:8px;">
+        <thead>
+          <tr>
+           <th>Miesiąc</th>
+    <th>Opad [l/m²]</th>
+    <th>T max [°C]</th>
+    <th>T min [°C]</th>
+          </tr>
+        </thead>
+        <tbody id="rainMonthlyTableBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
