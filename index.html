@@ -887,6 +887,9 @@ let editingFieldId = null;
 let editingMachineId = null;
 let editingTreatmentId = null;
 let seasonChart = null;
+let rainTodayChart = null;
+let rain7daysChart = null;
+let rainMonthlyChart = null;
 
 const KURZNIE_LAT = 50.692;
 const KURZNIE_LON = 17.747;
@@ -3264,7 +3267,11 @@ function renderRainTodayChart(hourlyToday) {
   const labels = Object.keys(hourlyToday).sort();
   const data = labels.map(h => Number(hourlyToday[h].mm || 0));
 
-  if (rainTodayChart) rainTodayChart.destroy();
+  if (rainTodayChart && typeof rainTodayChart.destroy === 'function') {
+    rainTodayChart.destroy();
+  }
+  rainTodayChart = null;
+
   rainTodayChart = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -3278,7 +3285,11 @@ function renderRainTodayChart(hourlyToday) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true } }
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
     }
   });
 }
@@ -3288,9 +3299,13 @@ function renderRainLast7Chart(dailyLast7) {
   if (!canvas || typeof Chart === 'undefined') return;
 
   const labels = Object.keys(dailyLast7).sort();
-  const data = labels.map(d => Number(dailyLast7[d].mm || 0));
+  const data = labels.map(d => Number((dailyLast7[d] && dailyLast7[d].mm) || 0));
 
-  if (rain7daysChart) rain7daysChart.destroy();
+  if (rain7daysChart && typeof rain7daysChart.destroy === 'function') {
+    rain7daysChart.destroy();
+  }
+  rain7daysChart = null;
+
   rain7daysChart = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -3304,7 +3319,11 @@ function renderRainLast7Chart(dailyLast7) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true } }
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
     }
   });
 }
@@ -3314,9 +3333,13 @@ function renderRainMonthlyChart(monthlyTotals) {
   if (!canvas || typeof Chart === 'undefined') return;
 
   const labels = Object.keys(monthlyTotals).sort();
-  const data = labels.map(m => Number(monthlyTotals[m].mm || 0));
+  const data = labels.map(m => Number((monthlyTotals[m] && monthlyTotals[m].mm) || 0));
 
-  if (rainMonthlyChart) rainMonthlyChart.destroy();
+  if (rainMonthlyChart && typeof rainMonthlyChart.destroy === 'function') {
+    rainMonthlyChart.destroy();
+  }
+  rainMonthlyChart = null;
+
   rainMonthlyChart = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -3330,7 +3353,11 @@ function renderRainMonthlyChart(monthlyTotals) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true } }
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
     }
   });
 }
