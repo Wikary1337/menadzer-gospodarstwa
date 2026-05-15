@@ -2119,8 +2119,8 @@ function toWarsawParts(dateValue) {
 }
 
 function renderRainTables(rainRows, weatherRows) {
-  console.log('renderRainTables rainRows:', rainRows);
-  console.log('renderRainTables weatherRows:', weatherRows);
+  console.log("renderRainTables rainRows:", rainRows);
+  console.log("renderRainTables weatherRows:", weatherRows);
 
   const todayParts = toWarsawParts(new Date());
   const todayStr = todayParts.dateStr;
@@ -2131,18 +2131,17 @@ function renderRainTables(rainRows, weatherRows) {
     d.setDate(d.getDate() - i);
     sevenDayKeys.push(toWarsawParts(d).dateStr);
   }
-
   const sevenDaySet = new Set(sevenDayKeys);
 
   const hourlyToday = {};
   const dailyLast7 = {};
   const monthlyTotals = {};
 
-  // -------- 1. OPADY --------
+  // 1) OPADY
   rainRows.forEach(row => {
     const { dateStr, hourStr, monthStr } = toWarsawParts(row.created_at);
-
     const mmRaw = Number(row.amount_mm);
+
     if (!isFinite(mmRaw) || mmRaw < 0 || mmRaw > 50) return;
 
     if (dateStr === todayStr) {
@@ -2165,7 +2164,7 @@ function renderRainTables(rainRows, weatherRows) {
     monthlyTotals[monthStr].mm += mmRaw;
   });
 
-  // -------- 2. POGODA --------
+  // 2) POGODA
   weatherRows.forEach(row => {
     const { dateStr, hourStr, monthStr, ts } = toWarsawParts(row.created_at);
 
@@ -2196,8 +2195,8 @@ function renderRainTables(rainRows, weatherRows) {
       const d = dailyLast7[dateStr];
 
       if (tempOk) {
-        if (d.tmax == null || temp > d.tmax) d.tmax = temp;
-        if (d.tmin == null || temp < d.tmin) d.tmin = temp;
+        if (d.tmax === null || temp > d.tmax) d.tmax = temp;
+        if (d.tmin === null || temp < d.tmin) d.tmin = temp;
       }
 
       if (presOk) {
@@ -2211,10 +2210,10 @@ function renderRainTables(rainRows, weatherRows) {
     }
 
     if (tempOk) {
-      if (monthlyTotals[monthStr].tmax == null || temp > monthlyTotals[monthStr].tmax) {
+      if (monthlyTotals[monthStr].tmax === null || temp > monthlyTotals[monthStr].tmax) {
         monthlyTotals[monthStr].tmax = temp;
       }
-      if (monthlyTotals[monthStr].tmin == null || temp < monthlyTotals[monthStr].tmin) {
+      if (monthlyTotals[monthStr].tmin === null || temp < monthlyTotals[monthStr].tmin) {
         monthlyTotals[monthStr].tmin = temp;
       }
     }
@@ -2237,20 +2236,20 @@ function renderRainTables(rainRows, weatherRows) {
     delete hourlyToday[h].weatherTs;
   });
 
-  console.log('hourlyToday:', hourlyToday);
-  console.log('dailyLast7:', dailyLast7);
-  console.log('monthlyTotals:', monthlyTotals);
+  console.log("hourlyToday:", hourlyToday);
+  console.log("dailyLast7:", dailyLast7);
+  console.log("monthlyTotals:", monthlyTotals);
 
   renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
   renderRainTodayChart(hourlyToday);
+  renderRainMonthlyChart(monthlyTotals);
 
   const dailyLast7ForChart = Object.fromEntries(
     Object.entries(dailyLast7).map(([d, v]) => [d, v.mm || 0])
   );
   renderRainLast7Chart(dailyLast7ForChart);
-  renderRainMonthlyChart(monthlyTotals);
 }
 
 function renderRainToday(hourlyToday) {
@@ -2877,37 +2876,39 @@ async function loadMachineServices(machineId){
 //  O P A D Y  –  ŁADOWANIE I AGREGACJA
 
 async function loadRainData() {
-  console.log('loadRainData start');
+  console.log("loadRainData start");
 
   const now = new Date();
-  const daysBack = 60; // ile dni wstecz pobiera z bazy
-
-  // data początkowa (UTC ISO) – tak jak wcześniej
+  const daysBack = 60;
   const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-  const fromIso = fromDate.toISOString(); // np. 2026-02-01T...
+  const fromIso = fromDate.toISOString();
 
-  const { data, error } = await supabaseClient
-    .from('rainmeasurements')
-    .select('created_at, amount_mm, temperature_c, pressure_pa')
-    .gte('created_at', fromIso)
-    .order('created_at', { ascending: true });
+  const { data: rainRows, error: rainErr } = await supabaseClient
+    .from("rainmeasurements")
+    .select("created_at, amount_mm, temperature_c, pressure_pa")
+    .gte("created_at", fromIso)
+    .order("created_at", { ascending: true });
 
-  if (error) {
-    console.error('Błąd ładowania opadów:', error);
+  if (rainErr) {
+    console.error("Błąd ładowania opadów:", rainErr);
     return;
   }
 
-const { data: weatherRows, error: wErr } = await supabaseClient
-  .from('weather_measurements')
-  .select('created_at, temperature_c, pressure_pa')
-  .gte('created_at', fromIso)
-  .order('created_at', { ascending: true });
+  const { data: weatherRows, error: weatherErr } = await supabaseClient
+    .from("weather_measurements")
+    .select("created_at, temperature_c, pressure_pa")
+    .gte("created_at", fromIso)
+    .order("created_at", { ascending: true });
 
-if (wErr) {
-  console.error('Błąd ładowania pogody:', wErr);
-}
+  if (weatherErr) {
+    console.error("Błąd ładowania pogody:", weatherErr);
+    return;
+  }
 
-renderRainTables(data || [], weatherRows || []);
+  console.log("loadRainData rainRows:", rainRows);
+  console.log("loadRainData weatherRows:", weatherRows);
+
+  renderRainTables(rainRows || [], weatherRows || []);
 }
   
 /* SEZONY */
