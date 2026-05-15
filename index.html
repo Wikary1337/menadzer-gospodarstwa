@@ -2071,12 +2071,13 @@ async function loadRainData() {
 
   const now = new Date();
   const daysBack = 60;
+
   const fromDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
   const fromIso = fromDate.toISOString();
 
   const { data: rainRows, error: rainErr } = await supabaseClient
     .from('rainmeasurements')
-    .select('created_at, amount_mm')
+    .select('created_at, amount_mm, temperature_c, pressure_pa')
     .gte('created_at', fromIso)
     .order('created_at', { ascending: true });
 
@@ -2100,7 +2101,6 @@ async function loadRainData() {
 
 function toWarsawParts(dateValue) {
   const d = new Date(dateValue);
-
   const local = new Date(
     d.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' })
   );
@@ -2138,7 +2138,7 @@ function renderRainTables(rainRows, weatherRows) {
   const dailyLast7 = {};
   const monthlyTotals = {};
 
-  // -------- 1) OPADY --------
+  // -------- 1. OPADY --------
   rainRows.forEach(row => {
     const { dateStr, hourStr, monthStr } = toWarsawParts(row.created_at);
 
@@ -2165,7 +2165,7 @@ function renderRainTables(rainRows, weatherRows) {
     monthlyTotals[monthStr].mm += mmRaw;
   });
 
-  // -------- 2) POGODA --------
+  // -------- 2. POGODA --------
   weatherRows.forEach(row => {
     const { dateStr, hourStr, monthStr, ts } = toWarsawParts(row.created_at);
 
@@ -2173,8 +2173,8 @@ function renderRainTables(rainRows, weatherRows) {
     const presPa = row.pressure_pa != null ? Number(row.pressure_pa) : null;
     const presHpa = presPa != null ? presPa / 100 : null;
 
-    const tempOk = temp != null && isFinite(temp) && temp > -50 && temp < 60;
-    const presOk = presHpa != null && isFinite(presHpa) && presHpa > 850 && presHpa < 1100;
+    const tempOk = temp != null && isFinite(temp) && temp >= -50 && temp <= 60;
+    const presOk = presHpa != null && isFinite(presHpa) && presHpa >= 850 && presHpa <= 1100;
 
     if (dateStr === todayStr) {
       if (!hourlyToday[hourStr]) {
@@ -2244,15 +2244,13 @@ function renderRainTables(rainRows, weatherRows) {
   renderRainToday(hourlyToday);
   renderRainLast7(dailyLast7);
   renderRainMonthly(monthlyTotals);
-
   renderRainTodayChart(hourlyToday);
-  renderRainMonthlyChart(monthlyTotals);
 
   const dailyLast7ForChart = Object.fromEntries(
     Object.entries(dailyLast7).map(([d, v]) => [d, v.mm || 0])
   );
-
   renderRainLast7Chart(dailyLast7ForChart);
+  renderRainMonthlyChart(monthlyTotals);
 }
 
 function renderRainToday(hourlyToday) {
